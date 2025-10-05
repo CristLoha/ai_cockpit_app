@@ -7,19 +7,24 @@ sealed class ChatEvent extends Equatable {
   List<Object?> get props => [];
 }
 
-class SendMessageAndFileEvent extends ChatEvent {
+class SendMessageWithFilesEvent extends ChatEvent {
   final String question;
-  final List<Uint8List> fileBytesList;
-  final List<String> fileNameList;
-
-  const SendMessageAndFileEvent({
+  final List<SelectedFile> files;
+  const SendMessageWithFilesEvent({
     required this.question,
-    required this.fileBytesList,
-    required this.fileNameList,
+    required this.files,
   });
-
   @override
-  List<Object> get props => [question, fileBytesList, fileNameList];
+  List<Object> get props => [question, files];
+}
+
+class SendFollowUpMessageEvent extends ChatEvent {
+  final String question;
+  const SendFollowUpMessageEvent(this.question);
+  @override
+  List<Object> get props => [question];
 }
 
 class RetryLastMessageEvent extends ChatEvent {}
+
+class ClearChatEvent extends ChatEvent {}

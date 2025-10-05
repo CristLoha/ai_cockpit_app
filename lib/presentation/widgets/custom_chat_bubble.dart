@@ -1,4 +1,4 @@
-import 'package:ai_cockpit_app/data/chat_message.dart';
+import 'package:ai_cockpit_app/data/models/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 

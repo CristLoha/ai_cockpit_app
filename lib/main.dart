@@ -1,11 +1,19 @@
 import 'package:ai_cockpit_app/api/api_service.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
+import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
+import 'package:ai_cockpit_app/firebase_options.dart';
 import 'package:ai_cockpit_app/presentation/screens/chat_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-void main() {
+import 'blocs/auth/auth_cubit.dart';
+
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }
 
@@ -13,8 +21,14 @@ class MyApp extends StatelessWidget {
   const MyApp({super.key});
   @override
   Widget build(BuildContext context) {
-    return RepositoryProvider(
-      create: (context) => ApiService(),
+    return MultiRepositoryProvider(
+      providers: [
+        RepositoryProvider(create: (context) => DeviceRepository()),
+        RepositoryProvider(
+          create: (context) =>
+              ApiService(deviceRepository: context.read<DeviceRepository>()),
+        ),
+      ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
@@ -22,6 +36,8 @@ class MyApp extends StatelessWidget {
                 ChatBloc(apiService: context.read<ApiService>()),
           ),
           BlocProvider(create: (context) => FilePickerCubit()),
+
+          BlocProvider(create: (context) => AuthCubit()),
         ],
         child: MaterialApp(
           title: 'AI Cockpit',

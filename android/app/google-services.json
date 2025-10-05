@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "740529960631",
+    "project_id": "ai-cockpit-app",
+    "storage_bucket": "ai-cockpit-app.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:740529960631:android:fe45d25689681cdd873f32",
+        "android_client_info": {
+          "package_name": "com.example.ai_cockpit_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCI8apJe78QCAzZFIlRGG96wG3BP0NPHDM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

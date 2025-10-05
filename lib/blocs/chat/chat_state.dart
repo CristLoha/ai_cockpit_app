@@ -3,9 +3,11 @@ part of 'chat_bloc.dart';
 @immutable
 sealed class ChatState extends Equatable {
   final List<ChatMessage> messages;
-  const ChatState({required this.messages});
+  final List<SelectedFile> activeFiles;
+
+  const ChatState({required this.messages, this.activeFiles = const []});
   @override
-  List<Object?> get props => [messages];
+  List<Object?> get props => [messages, activeFiles];
 }
 
 class ChatInitial extends ChatState {
@@ -13,36 +15,13 @@ class ChatInitial extends ChatState {
     : super(
         messages: [
           ChatMessage(
-            text:
-                'Halo! Silakan upload dokumen PDF atau DOCX untuk memulai analisis.',
+            text: 'Halo! Silakan upload dokumen untuk memulai analisis.',
             sender: MessageSender.ai,
           ),
         ],
       );
 }
 
-class ChatUpdate extends ChatState {
-  const ChatUpdate({required super.messages});
-}
-
-class ChatLoading extends ChatState {
-  const ChatLoading({required super.messages});
-}
-
-class ChatSuccess extends ChatState {
-  final String answer;
-
-  const ChatSuccess({required this.answer, required super.messages});
-
-  @override
-  List<Object?> get props => [answer];
-}
-
-class ChatFailure extends ChatState {
-  final String error;
-
-  const ChatFailure({required this.error, required super.messages});
-
-  @override
-  List<Object?> get props => [error];
+class ChatLoaded extends ChatState {
+  const ChatLoaded({required super.messages, required super.activeFiles});
 }

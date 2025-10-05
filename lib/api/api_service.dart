@@ -1,9 +1,14 @@
 import 'dart:typed_data';
+import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
 import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ApiService {
   final String _baseUrl = 'http://10.0.2.2:3000/api';
   final Dio _dio = Dio();
+  final DeviceRepository deviceRepository;
+
+  ApiService({required this.deviceRepository});
 
   Future<String> uploadDocumentAndGetAnswer({
     required List<Uint8List> fileBytesList,
@@ -11,6 +16,19 @@ class ApiService {
     required String question,
   }) async {
     try {
+      final user = FirebaseAuth.instance.currentUser;
+      String? idToken;
+      if (user != null) {
+        idToken = await user.getIdToken(true);
+      }
+      final deviceId = await deviceRepository.getDeviceId();
+
+      final headers = <String, String>{'x-device-id': deviceId};
+
+      if (idToken != null) {
+        headers['Authorization'] = 'Bearer $idToken';
+      }
+
       final formData = FormData();
 
       formData.fields.add(MapEntry('userQuestion', question));
@@ -29,7 +47,9 @@ class ApiService {
 
       final response = await _dio.post(
         '$_baseUrl/chat',
+
         data: formData,
+        options: Options(headers: headers),
         onSendProgress: (sent, total) {
           if (total != -1) {
             print(
