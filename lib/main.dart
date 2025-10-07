@@ -1,6 +1,7 @@
 import 'package:ai_cockpit_app/api/api_service.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
+import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
 import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
 import 'package:ai_cockpit_app/firebase_options.dart';
 import 'package:ai_cockpit_app/presentation/screens/chat_screen.dart';
@@ -38,6 +39,11 @@ class MyApp extends StatelessWidget {
           BlocProvider(create: (context) => FilePickerCubit()),
 
           BlocProvider(create: (context) => AuthCubit()),
+          BlocProvider(
+            create: (context) =>
+                HistoryCubit(apiService: context.read<ApiService>())
+                  ..fetchHistory(),
+          ),
         ],
         child: MaterialApp(
           title: 'AI Cockpit',

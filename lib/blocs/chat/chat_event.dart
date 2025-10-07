@@ -28,3 +28,11 @@ class SendFollowUpMessageEvent extends ChatEvent {
 class RetryLastMessageEvent extends ChatEvent {}
 
 class ClearChatEvent extends ChatEvent {}
+
+class LoadChatHistoryEvent extends ChatEvent {
+  final String chatId;
+  const LoadChatHistoryEvent(this.chatId);
+
+  @override
+  List<Object> get props => [chatId];
+}

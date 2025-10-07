@@ -17,15 +17,20 @@ class FilePickerCubit extends Cubit<FilePickerState> {
     );
 
     if (result != null) {
-      final newFiles = <SelectedFile>[];
+      // Salin daftar file yang sudah ada
+      final updatedFiles = List<SelectedFile>.from(state.selectedFiles);
+      final existingFileNames = updatedFiles.map((f) => f.fileName).toSet();
+
       for (var file in result.files) {
-        if (file.path != null) {
+        // Tambahkan hanya jika file belum ada di daftar
+        if (file.path != null && !existingFileNames.contains(file.name)) {
           final fileBytes = await File(file.path!).readAsBytes();
-          newFiles.add(SelectedFile(fileName: file.name, fileBytes: fileBytes));
+          updatedFiles.add(
+            SelectedFile(fileName: file.name, fileBytes: fileBytes),
+          );
         }
       }
-
-      emit(state.copyWith(selectedFiles: newFiles));
+      emit(state.copyWith(selectedFiles: updatedFiles));
     }
   }
 

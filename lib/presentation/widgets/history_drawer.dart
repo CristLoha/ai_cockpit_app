@@ -1,7 +1,9 @@
-
 import 'package:ai_cockpit_app/blocs/auth/auth_cubit.dart';
+import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
+import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:intl/intl.dart';
 
 class HistoryDrawer extends StatelessWidget {
   final bool isAuthenticated;
@@ -16,43 +18,215 @@ class HistoryDrawer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: const Color(0xFF252525),
-      child: BlocBuilder<AuthCubit, AuthState>(
-        builder: (context, state) {
-          return ListView(
-            padding: EdgeInsets.zero,
-            children: [
-              const SizedBox(
-                height: 120,
-                child: DrawerHeader(
-                  child: Text('Riwayat Chat', style: TextStyle(fontSize: 24)),
-                ),
+      backgroundColor: const Color(0xFF1E1E1E), // Darker background
+      child: Column(
+        children: [
+          _buildHeader(context),
+          _buildNewChatButton(context),
+          const Divider(color: Colors.white12),
+          Expanded(
+            child: BlocBuilder<AuthCubit, AuthState>(
+              builder: (context, authState) {
+                if (authState is Authenticated) {
+                  return _buildHistoryList();
+                }
+                return _buildSignInPrompt(context);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Container(
+      height: 120,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Theme.of(context).primaryColor, Colors.deepPurple],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+      ),
+      child: Center(
+        child: Text(
+          'Chat History',
+          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewChatButton(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 300),
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: ElevatedButton(
+        onPressed: isAuthenticated ? onNewChat : null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Theme.of(context).primaryColor,
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.add_circle_outline),
+            const SizedBox(width: 8),
+            Text(
+              'New Chat',
+              style: TextStyle(
+                fontSize: 16,
+                color: isAuthenticated ? Colors.white : Colors.grey,
               ),
-              ListTile(
-                leading: const Icon(Icons.add),
-                title: const Text('Chat Baru'),
-                onTap: () {
-                  Navigator.pop(context);
-                },
-              ),
-              if (state is Authenticated) ...[
-                const Divider(),
-                const Padding(
-                  padding: EdgeInsets.all(16.0),
-                  child: Text('Terkini'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHistoryList() {
+    return BlocBuilder<HistoryCubit, HistoryState>(
+      builder: (context, historyState) {
+        if (historyState is HistoryLoading) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (historyState is HistoryLoaded) {
+          if (historyState.history.isEmpty) {
+            return _buildEmptyState();
+          }
+          return ListView.builder(
+            padding: const EdgeInsets.symmetric(vertical: 8),
+            itemCount: historyState.history.length,
+            itemBuilder: (context, index) {
+              final item = historyState.history[index];
+              return _buildHistoryItem(context, item);
+            },
+          );
+        }
+        if (historyState is HistoryError) {
+          return _buildErrorState(historyState.message);
+        }
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  Widget _buildHistoryItem(BuildContext context, dynamic item) {
+    return Hero(
+      tag: 'history_${item.id}',
+      child: Card(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        color: const Color(0xFF2A2A2A),
+        elevation: 2,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(8),
+          onTap: () {
+            context.read<ChatBloc>().add(LoadChatHistoryEvent(item.id));
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                ListTile(title: const Text('Analisis Jurnal A...')),
-                ListTile(title: const Text('Rangkuman Paper B...')),
-              ] else ...[
-                const Divider(),
-                const ListTile(
-                  leading: Icon(Icons.history),
-                  title: Text('Sign in untuk melihat riwayat'),
+                const SizedBox(height: 4),
+                Text(
+                  DateFormat.yMMMd().format(item.createdAt),
+                  style: TextStyle(color: Colors.grey[400], fontSize: 12),
                 ),
               ],
-            ],
-          );
-        },
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.chat_bubble_outline, size: 48, color: Colors.grey[700]),
+          const SizedBox(height: 16),
+          const Text(
+            'No chat history yet',
+            style: TextStyle(color: Colors.grey, fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState(String message) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, color: Colors.redAccent, size: 48),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              style: const TextStyle(color: Colors.redAccent, fontSize: 16),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignInPrompt(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.lock_outline, color: Colors.white70, size: 48),
+            const SizedBox(height: 16),
+            const Text(
+              'Sign in to view history',
+              style: TextStyle(color: Colors.white70, fontSize: 18),
+            ),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                context.read<AuthCubit>().signInWithGoogle();
+                Navigator.pop(context);
+              },
+              icon: const Icon(Icons.login),
+              label: const Text('Sign in with Google'),
+              style: ElevatedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
