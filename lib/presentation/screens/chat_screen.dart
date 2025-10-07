@@ -13,8 +13,77 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
 import 'package:animated_text_kit/animated_text_kit.dart';
 
-class ChatScreen extends StatelessWidget {
+class ChatScreen extends StatefulWidget {
   const ChatScreen({super.key});
+
+  @override
+  State<ChatScreen> createState() => _ChatScreenState();
+}
+
+class _ChatScreenState extends State<ChatScreen> {
+  final ScrollController _scrollController = ScrollController();
+
+  void _scrollToBottom() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeOut,
+      );
+    }
+  }
+
+  Widget _buildChatList(BuildContext context, ChatState chatState) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToBottom();
+    });
+
+    return ListView.separated(
+      controller: _scrollController,
+      physics: const BouncingScrollPhysics(),
+      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
+      itemCount: chatState.messages.length,
+      separatorBuilder: (context, index) => const SizedBox(height: 16.0),
+      itemBuilder: (context, index) {
+        final message = chatState.messages[index];
+        return SlideTransition(
+          position:
+              Tween<Offset>(
+                begin: const Offset(0, -0.5),
+                end: Offset.zero,
+              ).animate(
+                CurvedAnimation(
+                  parent: AlwaysStoppedAnimation(1),
+                  curve: Interval(
+                    (index / chatState.messages.length).clamp(0.0, 1.0),
+                    1.0,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+              ),
+          child: FadeTransition(
+            opacity: Tween<double>(begin: 0.0, end: 1.0).animate(
+              CurvedAnimation(
+                parent: AlwaysStoppedAnimation(1),
+                curve: Interval(
+                  (index / chatState.messages.length).clamp(0.0, 1.0),
+                  1.0,
+                  curve: Curves.easeOut,
+                ),
+              ),
+            ),
+            child: _buildMessageItem(context, message),
+          ),
+        );
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose;
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,27 +218,6 @@ class ChatScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildChatList(BuildContext context, ChatState chatState) {
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(),
-      padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
-      itemCount: chatState.messages.length,
-      separatorBuilder: (context, index) => const SizedBox(height: 16.0),
-      itemBuilder: (context, index) {
-        final message = chatState.messages[index];
-        return AnimatedSlide(
-          duration: Duration(milliseconds: 300 + (index * 100)),
-          offset: const Offset(0, 0),
-          child: AnimatedOpacity(
-            duration: Duration(milliseconds: 300 + (index * 100)),
-            opacity: 1,
-            child: _buildMessageItem(context, message),
-          ),
-        );
-      },
-    );
-  }
-
   Widget _buildMessageItem(BuildContext context, ChatMessage message) {
     switch (message.type) {
       case MessageType.attachment:
@@ -300,6 +348,11 @@ class ChatScreen extends StatelessWidget {
         ? "Berikan ringkasan dari dokumen ini."
         : text.trim();
 
+    if (chatState.currentChatId != null) {
+      context.read<ChatBloc>().add(SendFollowUpMessageEvent(question));
+      return;
+    }
+
     if (filePickerState.selectedFiles.isNotEmpty) {
       context.read<ChatBloc>().add(
         SendMessageWithFilesEvent(
@@ -311,20 +364,70 @@ class ChatScreen extends StatelessWidget {
     } else if (chatState.activeFiles.isNotEmpty) {
       context.read<ChatBloc>().add(SendFollowUpMessageEvent(question));
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'Harap pilih setidaknya satu file dokumen.',
-            style: GoogleFonts.inter(),
-          ),
-          backgroundColor: Colors.redAccent,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(10),
-          ),
-        ),
+      _showCustomSnackBar(
+        context,
+        'Harap pilih setidaknya satu file dokumen untuk memulai chat baru.',
       );
     }
+  }
+
+  void _showCustomSnackBar(BuildContext context, String message) {
+    final mediaQuery = MediaQuery.of(context);
+    final topPadding = mediaQuery.padding.top;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Container(
+          padding: const EdgeInsets.symmetric(vertical: 8),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(
+                  Icons.info_outline,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  message,
+                  style: GoogleFonts.inter(
+                    fontSize: 14,
+                    color: Colors.white,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        backgroundColor: Colors.deepPurple.shade600,
+        behavior: SnackBarBehavior.floating,
+        margin: EdgeInsets.only(
+          top: topPadding + 20, // Add safe area + extra padding
+          right: 20,
+          left: 20,
+        ),
+        dismissDirection:
+            DismissDirection.horizontal, // Swipe horizontally to dismiss
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+          side: BorderSide(color: Colors.white.withOpacity(0.1), width: 1),
+        ),
+        elevation: 8,
+        duration: const Duration(seconds: 3),
+        animation: CurvedAnimation(
+          parent: const AlwaysStoppedAnimation(1),
+          curve: Curves.easeOutCirc,
+        ),
+      ),
+    );
   }
 
   void _showSignOutDialog(BuildContext context) {

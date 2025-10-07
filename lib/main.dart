@@ -13,6 +13,20 @@ import 'blocs/auth/auth_cubit.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  ErrorWidget.builder = (FlutterErrorDetails details) {
+    return Material(
+      child: Container(
+        color: Colors.transparent,
+        child: Text(
+          'An error occurred.',
+          style: TextStyle(
+            color: Colors.white,
+            fontFamily: 'System', // Use system font as fallback
+          ),
+        ),
+      ),
+    );
+  };
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());

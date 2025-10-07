@@ -5,14 +5,24 @@ sealed class ChatState extends Equatable {
   final List<ChatMessage> messages;
   final List<SelectedFile> activeFiles;
   final String? currentChatId;
+  final bool isRateLimited;
+  final Duration? retryAfter;
 
   const ChatState({
     required this.messages,
     this.activeFiles = const [],
     this.currentChatId,
+    this.isRateLimited = false,
+    this.retryAfter,
   });
   @override
-  List<Object?> get props => [messages, activeFiles, currentChatId];
+  List<Object?> get props => [
+    messages,
+    activeFiles,
+    currentChatId,
+    isRateLimited,
+    retryAfter,
+  ];
 }
 
 class ChatInitial extends ChatState {

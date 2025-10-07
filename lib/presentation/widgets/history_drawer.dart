@@ -4,6 +4,7 @@ import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 class HistoryDrawer extends StatelessWidget {
   final bool isAuthenticated;
@@ -96,7 +97,7 @@ class HistoryDrawer extends StatelessWidget {
     return BlocBuilder<HistoryCubit, HistoryState>(
       builder: (context, historyState) {
         if (historyState is HistoryLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return _buildShimmerLoading();
         }
         if (historyState is HistoryLoaded) {
           if (historyState.history.isEmpty) {
@@ -226,6 +227,59 @@ class HistoryDrawer extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoading() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      child: Shimmer.fromColors(
+        baseColor: const Color(0xFF2A2A2A),
+        highlightColor: Colors.deepPurple.withOpacity(0.1),
+        child: ListView.builder(
+          itemCount: 6,
+          itemBuilder: (_, __) => Padding(
+            padding: const EdgeInsets.only(bottom: 8.0),
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Colors.white,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 65,
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: double.infinity,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          width: 100,
+                          height: 12,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );

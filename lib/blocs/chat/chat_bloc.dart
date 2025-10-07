@@ -7,14 +7,16 @@ import 'package:ai_cockpit_app/data/models/chat_message.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
+import 'package:logging/logging.dart';
 part 'chat_event.dart';
 part 'chat_state.dart';
 
 class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ApiService apiService;
-
   ChatEvent? _lastEvent;
   StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  final Logger _logger = Logger('ChatBloc');
+  List<SelectedFile> _lastActiveFiles = [];
   bool _isRetrying = false;
 
   ChatBloc({required this.apiService}) : super(ChatInitial()) {
@@ -33,6 +35,15 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         add(RetryLastMessageEvent());
       }
     });
+
+    Logger.root.level = Level.ALL;
+    Logger.root.onRecord.listen((record) {
+      debugPrint('${record.level.name}: ${record.time}: ${record.message}');
+      if (record.error != null) {
+        debugPrint('Error: ${record.error}');
+        debugPrint('Stack trace:\n${record.stackTrace}');
+      }
+    });
   }
 
   @override
@@ -46,9 +57,25 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     Emitter<ChatState> emit,
   ) async {
     _lastEvent = event;
+    final filesToUse = event.files.isNotEmpty ? event.files : _lastActiveFiles;
+    if (filesToUse.isEmpty) {
+      emit(
+        ChatLoaded(
+          messages: [
+            ...state.messages,
+            ChatMessage(
+              text: 'Error: Harap pilih file terlebih dahulu',
+              sender: MessageSender.system,
+            ),
+          ],
+          activeFiles: [],
+        ),
+      );
+      return;
+    }
     await _handleMessageSending(
       event.question,
-      event.files,
+      filesToUse,
       emit,
       isNewFiles: true,
     );
@@ -140,7 +167,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           ? processedDocs
                 .map(
                   (doc) => ChatMessage(
-                    text: doc['title'],
+                    text: doc['text'],
                     originalFileName: doc['originalName'],
                     sender: MessageSender.system,
                     type: MessageType.attachment,
@@ -183,6 +210,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     required bool isNewFiles,
   }) async {
     _isRetrying = false;
+
+    _logger.info('Handling message sending');
+
     final userMessage = ChatMessage(text: question, sender: MessageSender.user);
     final loadingMessage = ChatMessage(
       text: 'loading',
@@ -196,16 +226,30 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       ChatLoaded(
         messages: [...baseMessages, userMessage, loadingMessage],
         activeFiles: files,
+        currentChatId: state.currentChatId,
       ),
     );
 
     try {
-      final Map<String, dynamic> apiResult = await apiService
-          .uploadDocumentAndGetAnswer(
-            fileBytesList: files.map((f) => f.fileBytes).toList(),
-            fileNameList: files.map((f) => f.fileName).toList(),
-            question: question,
-          );
+      Map<String, dynamic> apiResult;
+
+      if (state.currentChatId != null) {
+        _logger.info('Continuing existing chat: ${state.currentChatId}');
+        apiResult = await apiService.continueChat(
+          chatId: state.currentChatId!,
+          question: question,
+        );
+      } else {
+        _logger.info('Starting new chat with files');
+        if (files.isEmpty) {
+          throw Exception('Harap pilih file terlebih dahulu');
+        }
+        apiResult = await apiService.uploadDocumentAndGetAnswer(
+          fileBytesList: files.map((f) => f.fileBytes).toList(),
+          fileNameList: files.map((f) => f.fileName).toList(),
+          question: question,
+        );
+      }
 
       final String answer =
           apiResult['answer'] as String? ?? 'Gagal mendapatkan jawaban.';
@@ -213,16 +257,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           (apiResult['processedDocuments'] as List<dynamic>?) ?? [];
 
       final correctAttachmentMessages = isNewFiles
-          ? processedDocs
-                .map(
-                  (doc) => ChatMessage(
-                    text: doc['title'],
-                    originalFileName: doc['originalName'],
-                    sender: MessageSender.system,
-                    type: MessageType.attachment,
-                  ),
-                )
-                .toList()
+          ? processedDocs.map((doc) => ChatMessage.fromJson(doc)).toList()
           : <ChatMessage>[];
 
       final finalMessages = List<ChatMessage>.from(baseMessages)
@@ -230,19 +265,49 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ..add(userMessage)
         ..add(ChatMessage(text: answer, sender: MessageSender.ai));
 
-      emit(ChatLoaded(messages: finalMessages, activeFiles: files));
+      emit(
+        ChatLoaded(
+          messages: finalMessages,
+          activeFiles: files,
+          currentChatId: apiResult['chatId'] as String? ?? state.currentChatId,
+        ),
+      );
       _lastEvent = null;
-    } catch (e) {
-      final humanFriendlyError = await _mapErrorToMessage(e);
+    } catch (e, stackTrace) {
+      _logger.severe('Error sending message', e, stackTrace);
+      String errorMessage;
+      bool shouldRetry = false;
+      Duration? retryDelay;
+
+      if (e is RateLimitException) {
+        errorMessage =
+            'Batas penggunaan API tercapai. Mohon tunggu ${e.retryAfter.inSeconds} detik.';
+        shouldRetry = true;
+        retryDelay = e.retryAfter;
+      } else {
+        errorMessage = await _mapErrorToMessage(e);
+      }
+
       final failureMessages = List<ChatMessage>.from(baseMessages)
         ..add(userMessage)
         ..add(
           ChatMessage(
-            text: 'Error: $humanFriendlyError',
+            text: 'Error: $errorMessage',
             sender: MessageSender.system,
           ),
         );
-      emit(ChatLoaded(messages: failureMessages, activeFiles: files));
+      emit(
+        ChatLoaded(
+          messages: failureMessages,
+          activeFiles: files,
+          currentChatId: state.currentChatId,
+        ),
+      );
+
+      if (shouldRetry && retryDelay != null) {
+        await Future.delayed(retryDelay);
+        add(_lastEvent as ChatEvent);
+      }
     }
   }
 
@@ -251,6 +316,14 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     final connectivityResult = await Connectivity().checkConnectivity();
     if (connectivityResult.contains(ConnectivityResult.none)) {
       return 'Tidak ada koneksi internet. Mencoba menyambungkan kembali...';
+    }
+
+    if (e is RateLimitException) {
+      return 'Batas penggunaan API tercapai. Mohon tunggu ${e.retryAfter.inSeconds} detik.';
+    }
+
+    if (e is GuestLimitExceededException) {
+      return 'Batas penggunaan tamu tercapai. Silakan Sign In untuk melanjutkan.';
     }
     if (errorMessage.contains('connection refused') ||
         errorMessage.contains('failed to connect')) {
@@ -268,15 +341,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     LoadChatHistoryEvent event,
     Emitter<ChatState> emit,
   ) async {
-    emit(
-      ChatLoaded(
-        messages: const [
-          ChatMessage(text: 'loading', sender: MessageSender.system),
-        ],
-        activeFiles: const [],
-      ),
-    );
-
     try {
       final messages = await apiService.getChatMessages(event.chatId);
       final activeFiles = messages
@@ -289,6 +353,9 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           )
           .toList();
 
+      _lastActiveFiles = activeFiles;
+      _logger.info('Chat history loaded successfully');
+
       emit(
         ChatLoaded(
           messages: messages,
@@ -296,10 +363,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           currentChatId: event.chatId,
         ),
       );
-    } catch (e, s) {
-      // Print error dan stack trace untuk debugging
-      print('Error saat memuat riwayat chat: $e');
-      print('Stack trace: $s');
+    } catch (e, stackTrace) {
+      _logger.severe('Error loading chat history', e, stackTrace);
       emit(
         ChatLoaded(
           messages: [
@@ -315,6 +380,8 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   }
 
   void _onClearChat(ClearChatEvent event, Emitter<ChatState> emit) {
+    _lastActiveFiles = [];
+    _logger.info('Chat cleared');
     emit(ChatInitial());
   }
 }
