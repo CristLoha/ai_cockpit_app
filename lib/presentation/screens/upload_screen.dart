@@ -1,0 +1,343 @@
+import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
+import 'package:ai_cockpit_app/blocs/auth/auth_cubit.dart';
+import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
+import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
+import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
+import 'package:ai_cockpit_app/presentation/screens/analysis_result_screen.dart';
+import 'package:ai_cockpit_app/presentation/widgets/history_drawer.dart';
+import 'package:ai_cockpit_app/presentation/widgets/welcome_message.dart';
+import 'package:dotted_border/dotted_border.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+class UploadScreen extends StatelessWidget {
+  const UploadScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authState = context.watch<AuthCubit>().state;
+    final isAuthenticated = authState is Authenticated;
+
+    return BlocListener<AuthCubit, AuthState>(
+      listener: (context, state) {
+        if (state is Authenticated) {
+          // Panggil fetchHistory() saat pengguna berhasil login
+          context.read<HistoryCubit>().fetchHistory();
+        }
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1A1A1A),
+        appBar: _buildAppBar(context, authState),
+        drawer: HistoryDrawer(
+          isAuthenticated: isAuthenticated,
+          onNewChat: () {
+            context.read<FilePickerCubit>().clearFiles();
+
+            context.read<ChatBloc>().add(ClearChat());
+            Navigator.pop(context);
+          },
+        ),
+        body: MultiBlocListener(
+          listeners: [
+            // Listener untuk navigasi setelah analisis dokumen BARU selesai.
+            BlocListener<AnalysisBloc, AnalysisState>(
+              listenWhen: (previous, current) =>
+                  previous.status != current.status,
+              listener: (context, state) {
+                if (state.status == AnalysisStatus.success &&
+                    state.result != null) {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => AnalysisResultScreen(
+                        result: state.result!,
+                        chatId: state.result!.chatId,
+                      ),
+                    ),
+                  );
+                } else if (state.status == AnalysisStatus.failure) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error: ${state.errorMessage}'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              },
+            ),
+            // DIHAPUS: Listener untuk navigasi dari riwayat sudah tidak diperlukan lagi.
+            // Logika navigasi sekarang berada langsung di dalam HistoryDrawer.
+          ],
+          child: Center(
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    WelcomeMessage(authState: authState),
+                    const SizedBox(height: 40),
+                    _buildFileUploadArea(context),
+                    const SizedBox(height: 40),
+                    _buildAnalyzeButton(context),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFileUploadArea(BuildContext context) {
+    return BlocBuilder<FilePickerCubit, FilePickerState>(
+      builder: (context, state) {
+        final bool hasFiles = state.selectedFiles.isNotEmpty;
+        return GestureDetector(
+          onTap: () => context.read<FilePickerCubit>().pickFiles(),
+          child: DottedBorder(
+            child: Container(
+              width: double.infinity,
+              constraints: const BoxConstraints(minHeight: 200),
+              decoration: BoxDecoration(
+                color: const Color(0xFF212121).withOpacity(0.5),
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: hasFiles
+                  ? _buildSelectedFilesList(context, state.selectedFiles)
+                  : _buildEmptyUploadView(),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyUploadView() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Icon(
+          Icons.cloud_upload_outlined,
+          size: 60,
+          color: Colors.grey.shade500,
+        ),
+        const SizedBox(height: 12),
+        Text(
+          'Ketuk untuk memilih dokumen\n(PDF, DOCX)',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 16),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildSelectedFilesList(
+    BuildContext context,
+    List<SelectedFile> files,
+  ) {
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        children: [
+          ListView.separated(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: files.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 12),
+            itemBuilder: (context, index) {
+              final file = files[index];
+              return Material(
+                color: Colors.grey.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                child: ListTile(
+                  leading: const Icon(
+                    Icons.insert_drive_file_rounded,
+                    color: Colors.deepPurpleAccent,
+                  ),
+                  title: Text(
+                    file.fileName,
+                    style: const TextStyle(color: Colors.white),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.close, color: Colors.redAccent),
+                    onPressed: () => context.read<FilePickerCubit>().removeFile(
+                      file.fileName,
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+          const SizedBox(height: 16),
+          OutlinedButton.icon(
+            onPressed: () => context.read<FilePickerCubit>().pickFiles(),
+            icon: const Icon(Icons.add_circle_outline, size: 18),
+            label: const Text('Tambah File Lain'),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: Colors.white70,
+              side: BorderSide(color: Colors.grey.shade700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAnalyzeButton(BuildContext context) {
+    return BlocBuilder<AnalysisBloc, AnalysisState>(
+      builder: (context, analysisState) {
+        return BlocBuilder<FilePickerCubit, FilePickerState>(
+          builder: (context, fileState) {
+            final bool isLoading =
+                analysisState.status == AnalysisStatus.loading;
+            final bool hasFile = fileState.selectedFiles.isNotEmpty;
+            return SizedBox(
+              width: double.infinity,
+              height: 55,
+              child: ElevatedButton.icon(
+                icon: isLoading
+                    ? const SizedBox.shrink()
+                    : const Icon(Icons.science_outlined),
+                label: isLoading
+                    ? const CircularProgressIndicator(color: Colors.white)
+                    : Text(
+                        'Analisis Sekarang',
+                        style: GoogleFonts.spaceGrotesk(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                onPressed: (isLoading || !hasFile)
+                    ? null
+                    : () => context.read<AnalysisBloc>().add(
+                        AnalysisDocumentRequested(),
+                      ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepPurple,
+                  disabledBackgroundColor: Colors.grey.shade800,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(BuildContext context, AuthState authState) {
+    return AppBar(
+      backgroundColor: const Color(0xFF2D2D2D),
+      elevation: 0,
+      title: Text(
+        'AI Research Cockpit',
+        style: GoogleFonts.spaceGrotesk(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.white,
+          letterSpacing: 0.5,
+        ),
+      ),
+      centerTitle: true,
+      actions: [_buildAuthButton(context), const SizedBox(width: 16)],
+    );
+  }
+
+  Widget _buildAuthButton(BuildContext context) {
+    return BlocBuilder<AuthCubit, AuthState>(
+      builder: (context, state) {
+        if (state is Authenticated) {
+          return GestureDetector(
+            onTap: () => _showSignOutDialog(context),
+            child: Container(
+              padding: const EdgeInsets.all(2),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: LinearGradient(
+                  colors: [Theme.of(context).primaryColor, Colors.deepPurple],
+                ),
+              ),
+              child: CircleAvatar(
+                backgroundImage: NetworkImage(state.user.photoURL ?? ''),
+                radius: 18,
+              ),
+            ),
+          );
+        }
+        return ElevatedButton.icon(
+          onPressed: () => context.read<AuthCubit>().signInWithGoogle(),
+          icon: const Icon(Icons.login, size: 18),
+          label: Text(
+            'Sign In',
+            style: GoogleFonts.inter(fontWeight: FontWeight.w500),
+          ),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).primaryColor,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  void _showSignOutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2D2D2D),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          title: Text(
+            'Sign Out',
+            style: GoogleFonts.spaceGrotesk(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Apakah Anda yakin ingin keluar?',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+          actions: <Widget>[
+            TextButton(
+              child: Text(
+                'Batal',
+                style: GoogleFonts.inter(color: Colors.grey),
+              ),
+              onPressed: () => Navigator.of(dialogContext).pop(),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
+              ),
+              onPressed: () {
+                context.read<AuthCubit>().signOut();
+                context.read<ChatBloc>().add(ClearChat());
+                Navigator.of(dialogContext).pop();
+              },
+              child: Text(
+                'Keluar',
+                style: GoogleFonts.inter(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+}

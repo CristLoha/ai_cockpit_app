@@ -11,13 +11,18 @@ class HistoryCubit extends Cubit<HistoryState> {
   HistoryCubit({required this.apiService}) : super(HistoryInitial());
 
   Future<void> fetchHistory() async {
-    emit(HistoryLoading());
+    if (state is HistoryLoading) return;
 
+    emit(HistoryLoading());
     try {
       final historyList = await apiService.getChatHistory();
-
       emit(HistoryLoaded(historyList));
-    } catch (e) {
+    } catch (e, stackTrace) {
+      print('==================== HISTORY CUBIT ERROR ====================');
+      print('Error: $e');
+      print('StackTrace: $stackTrace');
+      print('=============================================================');
+
       emit(HistoryError(e.toString().replaceFirst("Exception: ", "")));
     }
   }

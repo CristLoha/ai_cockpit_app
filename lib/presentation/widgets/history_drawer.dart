@@ -1,7 +1,9 @@
 import 'package:ai_cockpit_app/blocs/auth/auth_cubit.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
+import 'package:ai_cockpit_app/presentation/screens/analysis_result_screen.dart';
 import 'package:flutter/material.dart';
+import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
@@ -18,8 +20,15 @@ class HistoryDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    print('Building HistoryDrawer'); // Debug print
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      print('Calling fetchHistory'); // Debug print
+      context.read<HistoryCubit>().fetchHistory();
+    });
+
     return Drawer(
-      backgroundColor: const Color(0xFF1E1E1E), // Darker background
+      backgroundColor: const Color(0xFF1E1E1E),
+
       child: Column(
         children: [
           _buildHeader(context),
@@ -52,7 +61,7 @@ class HistoryDrawer extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          'Chat History',
+          'Analysis History',
           style: Theme.of(context).textTheme.headlineSmall?.copyWith(
             color: Colors.white,
             fontWeight: FontWeight.bold,
@@ -96,7 +105,9 @@ class HistoryDrawer extends StatelessWidget {
   Widget _buildHistoryList() {
     return BlocBuilder<HistoryCubit, HistoryState>(
       builder: (context, historyState) {
+        print('Current HistoryState: $historyState');
         if (historyState is HistoryLoading) {
+          print('Showing loading state');
           return _buildShimmerLoading();
         }
         if (historyState is HistoryLoaded) {
@@ -120,7 +131,7 @@ class HistoryDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildHistoryItem(BuildContext context, dynamic item) {
+  Widget _buildHistoryItem(BuildContext context, ChatHistoryItem item) {
     return Hero(
       tag: 'history_${item.id}',
       child: Card(
@@ -129,8 +140,23 @@ class HistoryDrawer extends StatelessWidget {
         elevation: 2,
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () {
-            context.read<ChatBloc>().add(LoadChatHistoryEvent(item.id));
+          onTap: () async {
+            // 1. Tutup drawer terlebih dahulu.
+            Navigator.pop(context);
+            // 2. Kirim event untuk memuat data chat yang sesuai.
+            context.read<ChatBloc>().add(LoadChat(item.id));
+            // 3. Langsung navigasi ke halaman hasil analisis.
+            await Future.delayed(const Duration(milliseconds: 100));
+            if (context.mounted) {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => BlocProvider.value(
+                    value: context.read<ChatBloc>(),
+                    child: AnalysisResultScreen(chatId: item.id),
+                  ),
+                ),
+              );
+            }
           },
           child: Padding(
             padding: const EdgeInsets.all(12),

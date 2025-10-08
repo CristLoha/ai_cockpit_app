@@ -1,38 +1,24 @@
 part of 'chat_bloc.dart';
 
-@immutable
 sealed class ChatEvent extends Equatable {
   const ChatEvent();
   @override
-  List<Object?> get props => [];
+  List<Object> get props => [];
 }
 
-class SendMessageWithFilesEvent extends ChatEvent {
-  final String question;
-  final List<SelectedFile> files;
-  const SendMessageWithFilesEvent({
-    required this.question,
-    required this.files,
-  });
-  @override
-  List<Object> get props => [question, files];
-}
-
-class SendFollowUpMessageEvent extends ChatEvent {
-  final String question;
-  const SendFollowUpMessageEvent(this.question);
-  @override
-  List<Object> get props => [question];
-}
-
-class RetryLastMessageEvent extends ChatEvent {}
-
-class ClearChatEvent extends ChatEvent {}
-
-class LoadChatHistoryEvent extends ChatEvent {
+class LoadChat extends ChatEvent {
   final String chatId;
-  const LoadChatHistoryEvent(this.chatId);
+  const LoadChat(this.chatId);
+}
 
-  @override
-  List<Object> get props => [chatId];
+class SendMessage extends ChatEvent {
+  final String question;
+  const SendMessage({required this.question});
+}
+
+class ClearChat extends ChatEvent {}
+
+class AddSystemMessage extends ChatEvent {
+  final ChatMessage message;
+  const AddSystemMessage(this.message);
 }

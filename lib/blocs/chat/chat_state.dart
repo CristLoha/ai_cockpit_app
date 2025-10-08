@@ -1,38 +1,44 @@
 part of 'chat_bloc.dart';
 
-@immutable
-sealed class ChatState extends Equatable {
+enum ChatStatus { initial, loading, success, failure }
+
+class ChatState extends Equatable {
+  final ChatStatus status;
   final List<ChatMessage> messages;
-  final List<SelectedFile> activeFiles;
   final String? currentChatId;
-  final bool isRateLimited;
-  final Duration? retryAfter;
+  final List<SelectedFile> activeFiles;
+  final String? errorMessage;
 
   const ChatState({
-    required this.messages,
-    this.activeFiles = const [],
+    this.status = ChatStatus.initial,
+    this.messages = const [],
     this.currentChatId,
-    this.isRateLimited = false,
-    this.retryAfter,
+    this.activeFiles = const [],
+    this.errorMessage,
   });
+
+  ChatState copyWith({
+    ChatStatus? status,
+    List<ChatMessage>? messages,
+    String? currentChatId,
+    List<SelectedFile>? activeFiles,
+    String? errorMessage,
+  }) {
+    return ChatState(
+      status: status ?? this.status,
+      messages: messages ?? this.messages,
+      currentChatId: currentChatId ?? this.currentChatId,
+      activeFiles: activeFiles ?? this.activeFiles,
+      errorMessage: errorMessage ?? this.errorMessage,
+    );
+  }
+
   @override
   List<Object?> get props => [
+    status,
     messages,
-    activeFiles,
     currentChatId,
-    isRateLimited,
-    retryAfter,
+    activeFiles,
+    errorMessage,
   ];
-}
-
-class ChatInitial extends ChatState {
-  ChatInitial() : super(messages: []);
-}
-
-class ChatLoaded extends ChatState {
-  const ChatLoaded({
-    required super.messages,
-    required super.activeFiles,
-    super.currentChatId,
-  });
 }

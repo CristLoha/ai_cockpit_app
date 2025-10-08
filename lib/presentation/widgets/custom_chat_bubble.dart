@@ -4,15 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 
 class CustomChatBubble extends StatelessWidget {
-  final String text;
-  final MessageSender sender;
+  final ChatMessage message;
 
-  const CustomChatBubble({super.key, required this.text, required this.sender});
+  const CustomChatBubble({super.key, required this.message});
 
   @override
   Widget build(BuildContext context) {
-    final isUser = sender == MessageSender.user;
-    final isAi = sender == MessageSender.ai;
+    final isUser = message.sender == MessageSender.user;
+    final isAi = message.sender == MessageSender.ai;
     final theme = Theme.of(context);
 
     if (isUser) {
@@ -25,7 +24,7 @@ class CustomChatBubble extends StatelessWidget {
             borderRadius: BorderRadius.circular(16.0),
           ),
           child: SelectableText(
-            text,
+            message.text,
             style: const TextStyle(color: Colors.white),
           ),
         ),
@@ -45,7 +44,7 @@ class CustomChatBubble extends StatelessWidget {
                   focusNode: FocusNode(),
                   selectionControls: MaterialTextSelectionControls(),
                   child: MarkdownBody(
-                    data: text,
+                    data: message.text,
                     styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
                       p: theme.textTheme.bodyMedium?.copyWith(
                         color: Colors.white,
@@ -62,7 +61,7 @@ class CustomChatBubble extends StatelessWidget {
                     color: Colors.white54,
                   ),
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: text));
+                    Clipboard.setData(ClipboardData(text: message.text));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text('Teks jawaban AI disalin ke clipboard.'),

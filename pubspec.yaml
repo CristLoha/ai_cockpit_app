@@ -36,6 +36,7 @@ dependencies:
   connectivity_plus: ^7.0.0
   cupertino_icons: ^1.0.8
   dio: ^5.9.0
+  dotted_border: ^3.1.0
   equatable: ^2.0.7
   file_picker: ^10.3.3
   firebase_auth: ^6.1.0

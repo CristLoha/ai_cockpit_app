@@ -1,10 +1,13 @@
 import 'package:ai_cockpit_app/api/api_service.dart';
+import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
 import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
+import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
 import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
 import 'package:ai_cockpit_app/firebase_options.dart';
 import 'package:ai_cockpit_app/presentation/screens/chat_screen.dart';
+import 'package:ai_cockpit_app/presentation/screens/upload_screen.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -43,20 +46,30 @@ class MyApp extends StatelessWidget {
           create: (context) =>
               ApiService(deviceRepository: context.read<DeviceRepository>()),
         ),
+        RepositoryProvider(
+          create: (context) =>
+              ChatRepository(apiService: context.read<ApiService>()),
+        ),
       ],
       child: MultiBlocProvider(
         providers: [
           BlocProvider(
             create: (context) =>
-                ChatBloc(apiService: context.read<ApiService>()),
+                ChatBloc(chatRepository: context.read<ChatRepository>()),
           ),
           BlocProvider(create: (context) => FilePickerCubit()),
 
           BlocProvider(create: (context) => AuthCubit()),
           BlocProvider(
             create: (context) =>
-                HistoryCubit(apiService: context.read<ApiService>())
-                  ..fetchHistory(),
+                HistoryCubit(apiService: context.read<ApiService>()),
+          ),
+
+          BlocProvider(
+            create: (context) => AnalysisBloc(
+              chatRepository: context.read<ChatRepository>(),
+              filePickerCubit: context.read<FilePickerCubit>(),
+            ),
           ),
         ],
         child: MaterialApp(
@@ -75,7 +88,7 @@ class MyApp extends StatelessWidget {
             ),
           ),
           debugShowCheckedModeBanner: false,
-          home: const ChatScreen(),
+          home: UploadScreen(),
         ),
       ),
     );
