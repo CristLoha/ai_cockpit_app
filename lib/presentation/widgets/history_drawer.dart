@@ -84,7 +84,7 @@ class HistoryDrawer extends StatelessWidget {
             const Icon(Icons.add_circle_outline),
             const SizedBox(width: 8),
             Text(
-              'New Chat',
+              'New Analysis',
               style: TextStyle(
                 fontSize: 16,
                 color: isAuthenticated ? Colors.white : Colors.grey,

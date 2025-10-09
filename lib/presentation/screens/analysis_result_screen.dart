@@ -355,12 +355,13 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       width: double.infinity,
       height: 55,
       child: ElevatedButton.icon(
-        icon: const Icon(Icons.question_answer_outlined),
+        icon: const Icon(Icons.question_answer_outlined, color: Colors.white),
         label: Text(
           'Mulai Sesi Tanya Jawab',
           style: GoogleFonts.spaceGrotesk(
             fontSize: 18,
             fontWeight: FontWeight.bold,
+            color: Colors.white,
           ),
         ),
         onPressed: () {
