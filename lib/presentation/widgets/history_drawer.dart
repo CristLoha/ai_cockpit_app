@@ -20,12 +20,6 @@ class HistoryDrawer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print('Building HistoryDrawer'); // Debug print
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      print('Calling fetchHistory'); // Debug print
-      context.read<HistoryCubit>().fetchHistory();
-    });
-
     return Drawer(
       backgroundColor: const Color(0xFF1E1E1E),
 
@@ -140,23 +134,26 @@ class HistoryDrawer extends StatelessWidget {
         elevation: 2,
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () async {
-            // 1. Tutup drawer terlebih dahulu.
-            Navigator.pop(context);
-            // 2. Kirim event untuk memuat data chat yang sesuai.
-            context.read<ChatBloc>().add(LoadChat(item.id));
-            // 3. Langsung navigasi ke halaman hasil analisis.
-            await Future.delayed(const Duration(milliseconds: 100));
-            if (context.mounted) {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => BlocProvider.value(
-                    value: context.read<ChatBloc>(),
-                    child: AnalysisResultScreen(chatId: item.id),
-                  ),
+          onTap: () {
+            // DIUBAH: Ambil referensi Bloc dan Navigator SEBELUM navigasi/async gap.
+            final chatBloc = context.read<ChatBloc>();
+            final navigator = Navigator.of(context);
+
+            // 1. Tutup drawer.
+            navigator.pop();
+
+            // 2. Kirim event untuk memuat data chat.
+            chatBloc.add(LoadChat(item.id));
+
+            // 3. Navigasi ke halaman hasil analisis menggunakan referensi yang sudah aman.
+            navigator.push(
+              MaterialPageRoute(
+                builder: (_) => BlocProvider.value(
+                  value: chatBloc,
+                  child: AnalysisResultScreen(chatId: item.id),
                 ),
-              );
-            }
+              ),
+            );
           },
           child: Padding(
             padding: const EdgeInsets.all(12),

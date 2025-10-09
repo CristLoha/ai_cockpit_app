@@ -1,9 +1,8 @@
+import 'dart:typed_data';
 import 'package:ai_cockpit_app/api/api_service.dart';
-import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
 import 'package:ai_cockpit_app/data/models/ai_response.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
-import 'package:ai_cockpit_app/data/models/chat_message.dart';
 
 class ChatRepository {
   final ApiService _apiService;
@@ -11,13 +10,15 @@ class ChatRepository {
   ChatRepository({required ApiService apiService}) : _apiService = apiService;
 
   Future<AnalysisResult> analyzeNewDocument({
-    required List<SelectedFile> files,
+    required String fileName,
+    required Uint8List fileBytes,
+    Function(double)? onProgress,
   }) async {
-    final fileBytesList = files.map((f) => f.fileBytes).toList();
-    final fileNameList = files.map((f) => f.fileName).toList();
+    // Langsung teruskan ke ApiService
     return _apiService.analyzeDocument(
-      fileBytesList: fileBytesList,
-      fileNameList: fileNameList,
+      fileBytes: fileBytes,
+      fileName: fileName,
+      onProgress: onProgress,
     );
   }
 
@@ -28,17 +29,6 @@ class ChatRepository {
     return _apiService.postQuestion(chatId: chatId, question: question);
   }
 
-  // DITAMBAHKAN KEMBALI: Method ini dibutuhkan oleh AnalysisResultScreen
-  Future<AnalysisResult> requestAdvancedAnalysis({
-    required String chatId,
-    required String analysisType,
-  }) async {
-    return _apiService.requestAdvancedAnalysis(
-      chatId: chatId,
-      analysisType: analysisType,
-    );
-  }
-
   Future<Map<String, dynamic>> getChatMessages(String chatId) async {
     return _apiService.getChatMessages(chatId);
   }
@@ -47,4 +37,6 @@ class ChatRepository {
   Future<List<ChatHistoryItem>> getChatHistoryList() async {
     return _apiService.getChatHistory();
   }
+
+
 }

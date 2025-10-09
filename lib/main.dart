@@ -6,13 +6,15 @@ import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
 import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
 import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
 import 'package:ai_cockpit_app/firebase_options.dart';
-import 'package:ai_cockpit_app/presentation/screens/chat_screen.dart';
 import 'package:ai_cockpit_app/presentation/screens/upload_screen.dart';
+import 'package:ai_cockpit_app/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import 'blocs/auth/auth_cubit.dart';
+
+final NotificationService notificationService = NotificationService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,16 +24,16 @@ void main() async {
         color: Colors.transparent,
         child: Text(
           'An error occurred.',
-          style: TextStyle(
-            color: Colors.white,
-            fontFamily: 'System', // Use system font as fallback
-          ),
+          style: TextStyle(color: Colors.white, fontFamily: 'System'),
         ),
       ),
     );
   };
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  await notificationService.init();
+
   runApp(const MyApp());
 }
 
@@ -53,18 +55,18 @@ class MyApp extends StatelessWidget {
       ],
       child: MultiBlocProvider(
         providers: [
-          BlocProvider(
-            create: (context) =>
-                ChatBloc(chatRepository: context.read<ChatRepository>()),
-          ),
           BlocProvider(create: (context) => FilePickerCubit()),
-
           BlocProvider(create: (context) => AuthCubit()),
+          BlocProvider(
+            create: (context) => ChatBloc(
+              chatRepository: context.read<ChatRepository>(),
+              notificationService: notificationService,
+            ),
+          ),
           BlocProvider(
             create: (context) =>
                 HistoryCubit(apiService: context.read<ApiService>()),
           ),
-
           BlocProvider(
             create: (context) => AnalysisBloc(
               chatRepository: context.read<ChatRepository>(),

@@ -22,3 +22,12 @@ class AddSystemMessage extends ChatEvent {
   final ChatMessage message;
   const AddSystemMessage(this.message);
 }
+
+class ExportAnalysis extends ChatEvent {
+  final String format; // 'pdf' or 'docx'
+
+  const ExportAnalysis({required this.format});
+
+  @override
+  List<Object> get props => [format];
+}

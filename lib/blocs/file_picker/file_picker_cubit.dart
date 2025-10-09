@@ -1,5 +1,3 @@
-import 'dart:io';
-import 'dart:typed_data';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:file_picker/file_picker.dart';
@@ -9,37 +7,29 @@ part 'file_picker_state.dart';
 class FilePickerCubit extends Cubit<FilePickerState> {
   FilePickerCubit() : super(const FilePickerState());
 
-  void pickFiles() async {
+  // Fungsi untuk memilih satu file
+  Future<void> pickSingleFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'docx'],
-      allowMultiple: true,
+      allowMultiple: false, // Pastikan hanya satu file
     );
 
-    if (result != null) {
-      // Salin daftar file yang sudah ada
-      final updatedFiles = List<SelectedFile>.from(state.selectedFiles);
-      final existingFileNames = updatedFiles.map((f) => f.fileName).toSet();
+    if (result != null && result.files.single.path != null) {
+      final file = result.files.single;
 
-      for (var file in result.files) {
-        // Tambahkan hanya jika file belum ada di daftar
-        if (file.path != null && !existingFileNames.contains(file.name)) {
-          final fileBytes = await File(file.path!).readAsBytes();
-          updatedFiles.add(
-            SelectedFile(fileName: file.name, fileBytes: fileBytes),
-          );
-        }
-      }
-      emit(state.copyWith(selectedFiles: updatedFiles));
+      // HANYA SIMPAN NAMA & PATH FILE, JANGAN BACA BYTE DI SINI
+      emit(
+        state.copyWith(
+          selectedFiles: [
+            SelectedFile(fileName: file.name, filePath: file.path!),
+          ],
+        ),
+      );
     }
   }
 
-  void removeFile(String fileName) {
-    final newFiles = List<SelectedFile>.from(state.selectedFiles)
-      ..removeWhere((file) => file.fileName == fileName);
-    emit(state.copyWith(selectedFiles: newFiles));
-  }
-
+  // Fungsi untuk membersihkan file
   void clearFiles() {
     emit(state.copyWith(selectedFiles: []));
   }

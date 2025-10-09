@@ -1,5 +1,6 @@
 import 'dart:typed_data'; // FIX 1: Import yang hilang
 import 'package:dio/dio.dart'; // FIX 2: Import yang hilang
+import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
 import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
@@ -20,7 +21,8 @@ class ApiService {
           options.headers['x-device-id'] = deviceId;
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
-            final idToken = await user.getIdToken(true);
+            // DIUBAH: Jangan paksa refresh token setiap saat.
+            final idToken = await user.getIdToken();
             options.headers['Authorization'] = 'Bearer $idToken';
           }
           return handler.next(options);
@@ -32,25 +34,24 @@ class ApiService {
   }
 
   Future<AnalysisResult> analyzeDocument({
-    required List<Uint8List> fileBytesList,
-    required List<String> fileNameList,
+    required Uint8List fileBytes,
+    required String fileName,
+    Function(double)? onProgress,
   }) async {
     try {
-      final formData = FormData();
-      for (var i = 0; i < fileBytesList.length; i++) {
-        formData.files.add(
-          MapEntry(
-            'documents',
-            MultipartFile.fromBytes(
-              fileBytesList[i],
-              filename: fileNameList[i],
-            ),
-          ),
-        );
-      }
+      final formData = FormData.fromMap({
+        'document': MultipartFile.fromBytes(fileBytes, filename: fileName),
+      });
+
       final response = await _dio.post(
         '/analyze',
         data: formData,
+        onSendProgress: (int sent, int total) {
+          if (total > 0) {
+            double progress = sent / total;
+            onProgress?.call(progress);
+          }
+        },
         options: Options(
           sendTimeout: const Duration(seconds: 180),
           receiveTimeout: const Duration(seconds: 180),
@@ -58,9 +59,21 @@ class ApiService {
       );
       return AnalysisResult.fromJson(response.data);
     } on DioException catch (e) {
-      throw Exception(
-        'Error dari server: ${e.response?.data['message'] ?? e.message}',
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        developer.log(
+          'Authentication error during analysis: ${e.response?.data ?? e.message}',
+          name: 'ApiService',
+        );
+        throw Exception(
+          'Akses ditolak. Silakan Sign In untuk menganalisis dokumen.',
+        );
+      }
+
+      developer.log(
+        'Error saat menganalisis dokumen: ${e.response?.data ?? e.message}',
+        name: 'ApiService',
       );
+      throw Exception('Gagal menganalisis dokumen. Silakan coba lagi.');
     }
   }
 
@@ -75,8 +88,14 @@ class ApiService {
       );
       return AIResponse.fromJson(response.data);
     } on DioException catch (e) {
+      // DIUBAH: Sembunyikan error server dari UI
       if (e.response?.statusCode == 429) throw GuestLimitExceededException();
-      throw Exception('Gagal terhubung ke server: ${e.message}');
+      developer.log(
+        'Error saat mengirim pertanyaan: ${e.response?.data ?? e.message}',
+        name: 'ApiService',
+      );
+
+      throw Exception('Gagal mengirim pesan. Periksa koneksi Anda.');
     }
   }
 
@@ -89,38 +108,34 @@ class ApiService {
           .map((item) => ChatHistoryItem.fromJson(item as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
-      throw Exception('Gagal memuat riwayat chat: ${e.message}');
+      // DIUBAH: Tambahkan penanganan error otentikasi
+      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
+        // Error ini normal jika pengguna belum login, jadi kita kembalikan list kosong
+        // dan tidak perlu melempar exception yang akan ditampilkan sebagai error di UI.
+        developer.log(
+          'Gagal memuat riwayat: Pengguna belum login.',
+          name: 'ApiService',
+        );
+        return [];
+      }
+
+      developer.log(
+        'Error saat memuat riwayat: ${e.response?.data ?? e.message}',
+        name: 'ApiService',
+      );
+      throw Exception('Gagal memuat riwayat. Periksa koneksi Anda.');
     }
   }
 
   Future<Map<String, dynamic>> getChatMessages(String chatId) async {
     try {
+      // DIUBAH: Sesuaikan dengan endpoint backend terbaru
       final response = await _dio.get('/chats/$chatId');
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      throw Exception('Terjadi kesalahan saat memuat detail chat: $e');
-    }
-  }
-
-  // DITAMBAHKAN KEMBALI: Method yang hilang
-  Future<AnalysisResult> requestAdvancedAnalysis({
-    required String chatId,
-    required String analysisType,
-    String? userInstruction,
-  }) async {
-    try {
-      final response = await _dio.post(
-        '/chat/$chatId/analyze',
-        data: {
-          'analysisType': analysisType,
-          if (userInstruction != null) 'userInstruction': userInstruction,
-        },
-      );
-      return AnalysisResult.fromJson(response.data);
-    } on DioException catch (e) {
-      throw Exception(
-        'Error dari server: ${e.response?.data['message'] ?? e.message}',
-      );
+      // DIUBAH: Sembunyikan error server dari UI
+      developer.log('Error saat memuat detail chat: $e', name: 'ApiService');
+      throw Exception('Gagal memuat detail chat. Silakan coba lagi.');
     }
   }
 }

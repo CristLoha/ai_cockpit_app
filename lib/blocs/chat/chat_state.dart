@@ -1,6 +1,14 @@
 part of 'chat_bloc.dart';
 
-enum ChatStatus { initial, loading, success, failure }
+enum ChatStatus {
+  initial,
+  loading,
+  success,
+  failure,
+  exporting,
+  exportSuccess,
+  exportFailure,
+}
 
 class ChatState extends Equatable {
   final ChatStatus status;

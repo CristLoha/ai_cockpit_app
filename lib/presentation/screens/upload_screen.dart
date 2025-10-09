@@ -91,102 +91,177 @@ class UploadScreen extends StatelessWidget {
   }
 
   Widget _buildFileUploadArea(BuildContext context) {
-    return BlocBuilder<FilePickerCubit, FilePickerState>(
-      builder: (context, state) {
-        final bool hasFiles = state.selectedFiles.isNotEmpty;
-        return GestureDetector(
-          onTap: () => context.read<FilePickerCubit>().pickFiles(),
-          child: DottedBorder(
-            child: Container(
-              width: double.infinity,
-              constraints: const BoxConstraints(minHeight: 200),
-              decoration: BoxDecoration(
-                color: const Color(0xFF212121).withOpacity(0.5),
-                borderRadius: BorderRadius.circular(22),
+    // DIUBAH: Gunakan BlocBuilder untuk AnalysisBloc agar bisa merespons status loading
+    return BlocBuilder<AnalysisBloc, AnalysisState>(
+      builder: (context, analysisState) {
+        return BlocBuilder<FilePickerCubit, FilePickerState>(
+          builder: (context, fileState) {
+            final bool hasFiles = fileState.selectedFiles.isNotEmpty;
+            final bool isLoading =
+                analysisState.status == AnalysisStatus.loading;
+
+            return GestureDetector(
+              // Nonaktifkan tap saat sedang loading
+              onTap: isLoading
+                  ? null
+                  : () => context.read<FilePickerCubit>().pickSingleFile(),
+              child: DottedBorder(
+                child: Container(
+                  width: double.infinity,
+                  constraints: const BoxConstraints(minHeight: 200),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF212121).withOpacity(0.5),
+                    borderRadius: BorderRadius.circular(22),
+                  ),
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 300),
+                    child: _buildFileUploadChild(
+                      context,
+                      isLoading,
+                      hasFiles,
+                      analysisState,
+                      fileState,
+                    ),
+                  ),
+                ),
               ),
-              child: hasFiles
-                  ? _buildSelectedFilesList(context, state.selectedFiles)
-                  : _buildEmptyUploadView(),
-            ),
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildEmptyUploadView() {
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Icon(
-          Icons.cloud_upload_outlined,
-          size: 60,
-          color: Colors.grey.shade500,
+  // DITAMBAHKAN: Widget helper untuk AnimatedSwitcher
+  Widget _buildFileUploadChild(
+    BuildContext context,
+    bool isLoading,
+    bool hasFiles,
+    AnalysisState analysisState,
+    FilePickerState fileState,
+  ) {
+    if (isLoading) {
+      // Tampilan saat loading/upload
+      return _buildLoadingView(context, analysisState.uploadProgress);
+    } else if (hasFiles) {
+      // Tampilan jika ada file terpilih
+      return _buildSelectedFileView(context, fileState.selectedFiles.first);
+    } else {
+      // Tampilan kosong
+      return _buildEmptyUploadView();
+    }
+  }
+
+  // DITAMBAHKAN: Widget untuk menampilkan progress upload
+  Widget _buildLoadingView(BuildContext context, double progress) {
+    return Center(
+      key: const ValueKey('loading'), // Key untuk AnimatedSwitcher
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 80,
+              height: 80,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  CircularProgressIndicator(
+                    value: progress,
+                    strokeWidth: 6,
+                    backgroundColor: Colors.grey.shade800,
+                    valueColor: const AlwaysStoppedAnimation<Color>(
+                      Colors.deepPurple,
+                    ),
+                  ),
+                  Center(
+                    child: Text(
+                      '${(progress * 100).toInt()}%',
+                      style: GoogleFonts.inter(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              progress < 1.0 ? 'Mengunggah dokumen...' : 'Menganalisis...',
+              style: GoogleFonts.inter(
+                color: Colors.grey.shade400,
+                fontSize: 16,
+              ),
+            ),
+          ],
         ),
-        const SizedBox(height: 12),
-        Text(
-          'Ketuk untuk memilih dokumen\n(PDF, DOCX)',
-          textAlign: TextAlign.center,
-          style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 16),
-        ),
-      ],
+      ),
     );
   }
 
-  Widget _buildSelectedFilesList(
-    BuildContext context,
-    List<SelectedFile> files,
-  ) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
+  // DIUBAH: Tambahkan Key untuk AnimatedSwitcher
+  Widget _buildEmptyUploadView() {
+    return Center(
+      key: const ValueKey('empty'), // Key untuk AnimatedSwitcher
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          ListView.separated(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: files.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final file = files[index];
-              return Material(
-                color: Colors.grey.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(12),
-                child: ListTile(
-                  leading: const Icon(
-                    Icons.insert_drive_file_rounded,
-                    color: Colors.deepPurpleAccent,
-                  ),
-                  title: Text(
-                    file.fileName,
-                    style: const TextStyle(color: Colors.white),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.close, color: Colors.redAccent),
-                    onPressed: () => context.read<FilePickerCubit>().removeFile(
-                      file.fileName,
-                    ),
-                  ),
-                ),
-              );
-            },
+          Icon(
+            Icons.cloud_upload_outlined,
+            size: 60,
+            color: Colors.grey.shade500,
           ),
-          const SizedBox(height: 16),
-          OutlinedButton.icon(
-            onPressed: () => context.read<FilePickerCubit>().pickFiles(),
-            icon: const Icon(Icons.add_circle_outline, size: 18),
-            label: const Text('Tambah File Lain'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white70,
-              side: BorderSide(color: Colors.grey.shade700),
-            ),
+          const SizedBox(height: 12),
+          Text(
+            'Ketuk untuk memilih dokumen\n(PDF/DOCX)',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(color: Colors.grey.shade500, fontSize: 16),
           ),
         ],
       ),
     );
   }
 
+  // DIUBAH: Widget ini sekarang hanya menampilkan satu file.
+  Widget _buildSelectedFileView(BuildContext context, SelectedFile file) {
+    return Center(
+      key: const ValueKey('selected'), // Key untuk AnimatedSwitcher
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Material(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              child: ListTile(
+                leading: const Icon(
+                  Icons.insert_drive_file_rounded,
+                  color: Colors.deepPurpleAccent,
+                ),
+                title: Text(
+                  file.fileName,
+                  style: const TextStyle(color: Colors.white),
+                  overflow: TextOverflow.ellipsis,
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.close, color: Colors.redAccent),
+                  onPressed: () => context.read<FilePickerCubit>().clearFiles(),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAnalyzeButton(BuildContext context) {
+    // DIUBAH: Tombol loading sekarang hanya menampilkan teks statis saat loading,
+    // karena indikator utama sudah ada di area upload.
     return BlocBuilder<AnalysisBloc, AnalysisState>(
       builder: (context, analysisState) {
         return BlocBuilder<FilePickerCubit, FilePickerState>(
@@ -199,17 +274,23 @@ class UploadScreen extends StatelessWidget {
               height: 55,
               child: ElevatedButton.icon(
                 icon: isLoading
-                    ? const SizedBox.shrink()
-                    : const Icon(Icons.science_outlined),
-                label: isLoading
-                    ? const CircularProgressIndicator(color: Colors.white)
-                    : Text(
-                        'Analisis Sekarang',
-                        style: GoogleFonts.spaceGrotesk(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    ? const SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 3,
+                          color: Colors.white,
                         ),
-                      ),
+                      )
+                    : const Icon(Icons.science_outlined, color: Colors.white),
+                label: Text(
+                  isLoading ? 'Menganalisis...' : 'Analisis Sekarang',
+                  style: GoogleFonts.spaceGrotesk(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
                 onPressed: (isLoading || !hasFile)
                     ? null
                     : () => context.read<AnalysisBloc>().add(
@@ -251,6 +332,21 @@ class UploadScreen extends StatelessWidget {
   Widget _buildAuthButton(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
+        // DITAMBAHKAN: Tampilkan indikator loading saat proses otentikasi berjalan.
+        if (state is AuthLoading) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 12.0),
+            child: SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: Colors.white,
+              ),
+            ),
+          );
+        }
+
         if (state is Authenticated) {
           return GestureDetector(
             onTap: () => _showSignOutDialog(context),

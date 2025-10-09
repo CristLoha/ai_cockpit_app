@@ -1,4 +1,3 @@
-// lib/data/models/analysis_result.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AnalysisResult {
@@ -12,6 +11,8 @@ class AnalysisResult {
   final List<String> keywords;
   final List<String> references;
   final DateTime createdAt;
+  // BARU: Tambahkan field untuk daftar file asli
+  final List<String> originalFileNames;
 
   AnalysisResult({
     required this.chatId,
@@ -24,19 +25,17 @@ class AnalysisResult {
     required this.keywords,
     required this.references,
     required this.createdAt,
+    required this.originalFileNames, // Tambahkan di constructor
   });
 
-  // DISEDERHANAKAN & DIPERBAIKI: Factory ini sekarang benar
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
-    // Cek jika ini adalah respons dari /api/analyze yang punya nested 'analysis'
     final data = json.containsKey('analysis')
         ? json['analysis'] as Map<String, dynamic>
         : json;
 
     return AnalysisResult(
-      // Jika dari /api/analyze, chatId ada di level atas. Jika dari history, ada di dalam sebagai 'id'.
       chatId: json['chatId'] ?? data['id'] ?? '',
-      title: data['title'] ?? 'Judul Tidak Ditemukan',
+      title: data['title'] ?? 'Analisis Gabungan',
       authors: List<String>.from(data['authors'] ?? []),
       publication: data['publication'] ?? '',
       summary: data['summary'] ?? '',
@@ -45,11 +44,12 @@ class AnalysisResult {
       keywords: List<String>.from(data['keywords'] ?? []),
       references: List<String>.from(data['references'] ?? []),
       createdAt: _parseTimestamp(data['createdAt'] ?? json['createdAt']),
+      // BARU: Parsing originalFileNames dari JSON
+      originalFileNames: List<String>.from(data['originalFileNames'] ?? []),
     );
   }
 }
 
-// Helper untuk parsing timestamp
 DateTime _parseTimestamp(dynamic timestamp) {
   if (timestamp == null) return DateTime.now();
   if (timestamp is Timestamp) return timestamp.toDate();

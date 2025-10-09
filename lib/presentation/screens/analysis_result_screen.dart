@@ -1,4 +1,3 @@
-// lib/presentation/screens/analysis_result_screen.dart
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/models/chat_message.dart';
@@ -22,17 +21,20 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.result == null) {
-      context.read<ChatBloc>().add(LoadChat(widget.chatId));
-    } else {
-      final initialAnalysisMessage = ChatMessage(
-        text: 'Analisis awal dokumen.',
-        sender: MessageSender.system,
-        analysisResult: widget.result,
-        timestamp: widget.result!.createdAt,
-      );
-      context.read<ChatBloc>().add(AddSystemMessage(initialAnalysisMessage));
-    }
+   
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.result == null) {
+        context.read<ChatBloc>().add(LoadChat(widget.chatId));
+      } else {
+        final initialAnalysisMessage = ChatMessage(
+          text: 'Analisis awal dokumen.',
+          sender: MessageSender.system,
+          analysisResult: widget.result,
+          timestamp: widget.result!.createdAt,
+        );
+        context.read<ChatBloc>().add(AddSystemMessage(initialAnalysisMessage));
+      }
+    });
   }
 
   @override
@@ -45,108 +47,187 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           style: GoogleFonts.spaceGrotesk(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF2D2D2D),
+        actions: [_buildExportButton(context), const SizedBox(width: 8)],
       ),
-      body: BlocBuilder<ChatBloc, ChatState>(
-        builder: (context, chatState) {
-          if ((chatState.status == ChatStatus.loading ||
-                  chatState.status == ChatStatus.initial) &&
-              chatState.messages.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+      body: MultiBlocListener(
+        listeners: [
+          BlocListener<ChatBloc, ChatState>(
+            listenWhen:
+                (previous, current) => // Hanya listen pada status ekspor
+                    previous.status != current.status &&
+                    (current.status == ChatStatus.exporting ||
+                        current.status == ChatStatus.exportSuccess ||
+                        current.status == ChatStatus.exportFailure),
+            listener: (context, state) {
+              if (state.status == ChatStatus.exporting) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(
+                      content: Text('Mengekspor hasil analisis...'),
+                    ),
+                  );
+              } else if (state.status == ChatStatus.exportSuccess) {
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    const SnackBar(
+                      content: Text('File berhasil diekspor dan disimpan.'),
+                      backgroundColor: Colors.green,
+                    ),
+                  );
+              } else if (state.status == ChatStatus.exportFailure) {
+                print(state.errorMessage);
+                ScaffoldMessenger.of(context)
+                  ..hideCurrentSnackBar()
+                  ..showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        'Gagal mengekspor: ${state.errorMessage ?? "Terjadi kesalahan"}',
+                      ),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+              }
+            },
+          ),
+        ],
+        child: BlocBuilder<ChatBloc, ChatState>(
+          builder: (context, chatState) {
+            if ((chatState.status == ChatStatus.loading ||
+                    chatState.status == ChatStatus.initial) &&
+                chatState.messages.isEmpty) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          final analysisMessage = chatState.messages.firstWhere(
-            (msg) => msg.analysisResult != null,
-            orElse: () => ChatMessage(
-              text: 'fallback',
-              sender: MessageSender.system,
-              timestamp: DateTime.now(),
-            ),
-          );
-          final displayData = analysisMessage.analysisResult;
-
-          if (displayData == null) {
-            return const Center(
-              child: Text(
-                "Data analisis tidak ditemukan.",
-                style: TextStyle(color: Colors.white),
+            final analysisMessage = chatState.messages.firstWhere(
+              (msg) => msg.analysisResult != null,
+              orElse: () => ChatMessage(
+                text: 'fallback',
+                sender: MessageSender.system,
+                timestamp: DateTime.now(),
               ),
             );
-          }
+            final displayData = analysisMessage.analysisResult;
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  displayData.title,
-                  style: GoogleFonts.spaceGrotesk(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+            if (displayData == null) {
+              return const Center(
+                child: Text(
+                  "Data analisis tidak ditemukan.",
+                  style: TextStyle(color: Colors.white),
                 ),
-                const SizedBox(height: 8),
+              );
+            }
 
-                if (displayData.authors.isNotEmpty) ...[
-                  _buildMetaInfo(
-                    Icons.people_alt_outlined,
-                    displayData.authors.join(', '),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                if (displayData.publication.isNotEmpty) ...[
-                  _buildMetaInfo(
-                    Icons.library_books_outlined,
-                    displayData.publication,
-                  ),
-                ],
-                const SizedBox(height: 24),
-
-                _buildSectionTitle("Ringkasan Dokumen"),
-                AnalysisCard(
-                  documentName: "",
-                  analysisText: displayData.summary,
-                ),
-                const SizedBox(height: 24),
-
-                if (displayData.keywords.isNotEmpty) ...[
-                  _buildSectionTitle("Kata Kunci"),
-                  _buildKeywords(displayData.keywords),
-                  const SizedBox(height: 24),
-                ],
-
-                if (displayData.keyPoints.isNotEmpty) ...[
-                  _buildSectionTitle("Poin Kunci"),
-                  _buildKeyPoints(displayData.keyPoints),
-                  const SizedBox(height: 24),
-                ],
-
-                if (displayData.methodology.isNotEmpty) ...[
-                  _buildSectionTitle("Metodologi"),
+            return SingleChildScrollView(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
                   Text(
-                    displayData.methodology,
-                    style: GoogleFonts.inter(
-                      color: Colors.white70,
-                      height: 1.5,
+                    displayData.title,
+                    style: GoogleFonts.spaceGrotesk(
+                      color: Colors.white,
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: 8),
+
+                  if (displayData.authors.isNotEmpty) ...[
+                    _buildMetaInfo(
+                      Icons.people_alt_outlined,
+                      displayData.authors.join(', '),
+                    ),
+                    const SizedBox(height: 4),
+                  ],
+                  if (displayData.publication.isNotEmpty) ...[
+                    _buildMetaInfo(
+                      Icons.library_books_outlined,
+                      displayData.publication,
+                    ),
+                  ],
                   const SizedBox(height: 24),
-                ],
 
-                if (displayData.references.isNotEmpty) ...[
-                  _buildSectionTitle("Referensi Utama"),
-                  _buildReferences(displayData.references),
-                  const SizedBox(height: 32),
-                ],
+                  _buildSectionTitle("Ringkasan Dokumen"),
+                  AnalysisCard(
+                    documentName: "",
+                    analysisText: displayData.summary,
+                  ),
+                  const SizedBox(height: 24),
 
-                // DIHAPUS: Bagian "Analisis Lanjutan" sudah tidak ada lagi.
-                Center(child: _buildQnAButton(context, displayData.chatId)),
-              ],
-            ),
-          );
-        },
+                  if (displayData.keywords.isNotEmpty) ...[
+                    _buildSectionTitle("Kata Kunci"),
+                    _buildKeywords(displayData.keywords),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (displayData.keyPoints.isNotEmpty) ...[
+                    _buildSectionTitle("Poin Kunci"),
+                    _buildKeyPoints(displayData.keyPoints),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (displayData.methodology.isNotEmpty) ...[
+                    _buildSectionTitle("Metodologi"),
+                    Text(
+                      displayData.methodology,
+                      style: GoogleFonts.inter(
+                        color: Colors.white70,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (displayData.references.isNotEmpty) ...[
+                    _buildSectionTitle("Referensi Utama"),
+                    _buildReferences(displayData.references),
+                    const SizedBox(height: 32),
+                  ],
+
+                
+                  Center(child: _buildQnAButton(context, widget.chatId)),
+                ],
+              ),
+            );
+          },
+        ),
       ),
+    );
+  }
+
+  Widget _buildExportButton(BuildContext context) {
+    return PopupMenuButton<String>(
+      onSelected: (String format) {
+        context.read<ChatBloc>().add(ExportAnalysis(format: format));
+      },
+      icon: const Icon(Icons.ios_share),
+      tooltip: 'Ekspor Analisis',
+      color: const Color(0xFF2D2D2D),
+      itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+        PopupMenuItem<String>(
+          value: 'pdf',
+          child: Row(
+            children: [
+              Icon(Icons.picture_as_pdf_outlined, color: Colors.red.shade300),
+              const SizedBox(width: 12),
+              const Text('Ekspor sebagai PDF'),
+            ],
+          ),
+        ),
+        // PopupMenuItem<String>(
+        //   value: 'docx',
+        //   enabled: true,
+        //   child: Row(
+        //     children: [
+        //       Icon(Icons.description_outlined, color: Colors.blue.shade300),
+        //       const SizedBox(width: 12),
+        //       const Text('Ekspor sebagai DOCX'),
+        //     ],
+        //   ),
+        // ),
+      ],
     );
   }
 
@@ -285,9 +366,14 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           ),
         ),
         onPressed: () {
-          Navigator.of(
-            context,
-          ).push(MaterialPageRoute(builder: (_) => ChatScreen(chatId: chatId)));
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => BlocProvider.value(
+                value: context.read<ChatBloc>(),
+                child: ChatScreen(chatId: chatId),
+              ),
+            ),
+          );
         },
         style: ElevatedButton.styleFrom(
           backgroundColor: Colors.deepPurple,
