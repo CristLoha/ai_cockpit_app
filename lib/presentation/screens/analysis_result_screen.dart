@@ -21,7 +21,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   @override
   void initState() {
     super.initState();
-   
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.result == null) {
         context.read<ChatBloc>().add(LoadChat(widget.chatId));
@@ -52,12 +52,11 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
       body: MultiBlocListener(
         listeners: [
           BlocListener<ChatBloc, ChatState>(
-            listenWhen:
-                (previous, current) => // Hanya listen pada status ekspor
-                    previous.status != current.status &&
-                    (current.status == ChatStatus.exporting ||
-                        current.status == ChatStatus.exportSuccess ||
-                        current.status == ChatStatus.exportFailure),
+            listenWhen: (previous, current) =>
+                previous.status != current.status &&
+                (current.status == ChatStatus.exporting ||
+                    current.status == ChatStatus.exportSuccess ||
+                    current.status == ChatStatus.exportFailure),
             listener: (context, state) {
               if (state.status == ChatStatus.exporting) {
                 ScaffoldMessenger.of(context)
@@ -186,7 +185,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     const SizedBox(height: 32),
                   ],
 
-                
                   Center(child: _buildQnAButton(context, widget.chatId)),
                 ],
               ),
@@ -216,17 +214,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
             ],
           ),
         ),
-        // PopupMenuItem<String>(
-        //   value: 'docx',
-        //   enabled: true,
-        //   child: Row(
-        //     children: [
-        //       Icon(Icons.description_outlined, color: Colors.blue.shade300),
-        //       const SizedBox(width: 12),
-        //       const Text('Ekspor sebagai DOCX'),
-        //     ],
-        //   ),
-        // ),
       ],
     );
   }

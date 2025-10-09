@@ -99,9 +99,7 @@ class HistoryDrawer extends StatelessWidget {
   Widget _buildHistoryList() {
     return BlocBuilder<HistoryCubit, HistoryState>(
       builder: (context, historyState) {
-        print('Current HistoryState: $historyState');
         if (historyState is HistoryLoading) {
-          print('Showing loading state');
           return _buildShimmerLoading();
         }
         if (historyState is HistoryLoaded) {
@@ -135,17 +133,13 @@ class HistoryDrawer extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
           onTap: () {
-            // DIUBAH: Ambil referensi Bloc dan Navigator SEBELUM navigasi/async gap.
             final chatBloc = context.read<ChatBloc>();
             final navigator = Navigator.of(context);
 
-            // 1. Tutup drawer.
             navigator.pop();
 
-            // 2. Kirim event untuk memuat data chat.
             chatBloc.add(LoadChat(item.id));
 
-            // 3. Navigasi ke halaman hasil analisis menggunakan referensi yang sudah aman.
             navigator.push(
               MaterialPageRoute(
                 builder: (_) => BlocProvider.value(

@@ -22,7 +22,6 @@ class AdvancedAnalysisRequested extends AnalysisEvent {
   List<Object> get props => [chatId, analysisType];
 }
 
-// DITAMBAHKAN: Event private untuk internal BLoC
 class _AnalysisProgressUpdated extends AnalysisEvent {
   final double progress;
 

@@ -7,18 +7,16 @@ part 'file_picker_state.dart';
 class FilePickerCubit extends Cubit<FilePickerState> {
   FilePickerCubit() : super(const FilePickerState());
 
-  // Fungsi untuk memilih satu file
   Future<void> pickSingleFile() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['pdf', 'docx'],
-      allowMultiple: false, // Pastikan hanya satu file
+      allowMultiple: false,
     );
 
     if (result != null && result.files.single.path != null) {
       final file = result.files.single;
 
-      // HANYA SIMPAN NAMA & PATH FILE, JANGAN BACA BYTE DI SINI
       emit(
         state.copyWith(
           selectedFiles: [
@@ -29,7 +27,6 @@ class FilePickerCubit extends Cubit<FilePickerState> {
     }
   }
 
-  // Fungsi untuk membersihkan file
   void clearFiles() {
     emit(state.copyWith(selectedFiles: []));
   }

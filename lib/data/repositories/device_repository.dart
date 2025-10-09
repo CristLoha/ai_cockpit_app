@@ -13,7 +13,7 @@ class DeviceRepository {
       deviceId = _uuid.v4();
       await prefs.setString(_deviceKey, deviceId);
 
-      print('Generated new device ID: $deviceId');
+    
     }
     return deviceId;
   }

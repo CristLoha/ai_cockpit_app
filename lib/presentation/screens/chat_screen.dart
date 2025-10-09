@@ -1,6 +1,5 @@
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/data/models/chat_message.dart';
-import 'package:ai_cockpit_app/presentation/widgets/analysis_card.dart';
 import 'package:ai_cockpit_app/presentation/widgets/custom_chat_bubble.dart';
 import 'package:ai_cockpit_app/presentation/widgets/custom_message_bar.dart';
 import 'package:flutter/material.dart';
@@ -22,7 +21,6 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    // Event `LoadChat` sudah dipanggil di `AnalysisResultScreen` sebelum navigasi ke sini.
   }
 
   @override
@@ -137,8 +135,7 @@ class _ChatScreenState extends State<ChatScreen> {
       ),
       child: CustomMessageBar(
         hintText: 'Ketik pertanyaan lanjutan...',
-        // DIKOSONGKAN: `onAttach` dan `onRemoveFile` tidak diisi,
-        // sehingga tombol dan chip file tidak akan muncul.
+
         onSend: (text) {
           if (text.trim().isNotEmpty) {
             context.read<ChatBloc>().add(SendMessage(question: text));

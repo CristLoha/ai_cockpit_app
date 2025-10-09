@@ -4,7 +4,7 @@ import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/models/chat_message.dart';
 import 'package:ai_cockpit_app/services/docx_export_service.dart';
 import 'package:ai_cockpit_app/services/pdf_export_service.dart';
-import 'package:ai_cockpit_app/services/notification_service.dart'; // DITAMBAHKAN
+import 'package:ai_cockpit_app/services/notification_service.dart';
 import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
@@ -20,13 +20,13 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
   final ChatRepository _chatRepository;
   late PdfExportService _pdfExportService;
   late DocxExportService _docxExportService;
-  final NotificationService _notificationService; // DITAMBAHKAN
+  final NotificationService _notificationService;
 
   ChatBloc({
     required ChatRepository chatRepository,
-    required NotificationService notificationService, // DITAMBAHKAN
+    required NotificationService notificationService,
   }) : _chatRepository = chatRepository,
-       _notificationService = notificationService, // DITAMBAHKAN
+       _notificationService = notificationService,
        super(const ChatState()) {
     on<LoadChat>(_onLoadChat);
     on<SendMessage>(_onSendMessage);
@@ -132,7 +132,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(
         state.copyWith(
           status: ChatStatus.failure,
-          // Hapus pesan user yang gagal terkirim dan tambahkan pesan error
+
           messages: [...currentMessages, errorMessage],
           errorMessage: errorMessageText,
         ),
@@ -174,7 +174,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
     emit(state.copyWith(status: ChatStatus.exporting));
 
     try {
-      // Ambil data analisis dari state
       final analysisResult = state.messages
           .firstWhere((m) => m.analysisResult != null)
           .analysisResult;
@@ -183,7 +182,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         throw Exception("Data analisis tidak ditemukan untuk diekspor.");
       }
 
-      // Hasilkan file PDF atau DOCX berdasarkan format
       final Uint8List fileBytes;
       if (event.format == 'pdf') {
         fileBytes = await _pdfExportService.generateAnalysisPdf(analysisResult);
@@ -199,7 +197,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
 
       if (Platform.isAndroid) {
         final deviceInfo = await DeviceInfoPlugin().androidInfo;
-        // Android 13 (SDK 33) dan yang lebih baru tidak memerlukan izin untuk menyimpan ke direktori publik.
+
         if (deviceInfo.version.sdkInt >= 33) {
           hasPermission = true;
         } else {
@@ -207,7 +205,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           hasPermission = status.isGranted;
         }
       } else {
-        // Untuk iOS atau platform lain, asumsikan izin sudah ditangani atau tidak diperlukan.
         hasPermission = true;
       }
 
@@ -227,7 +224,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
 
       final analysisTitle = analysisResult.title;
-      // Ganti karakter yang tidak valid untuk nama file
+
       final safeTitle = analysisTitle.replaceAll(RegExp(r'[\\/*?:"<>|]'), '_');
       final fileName = '$safeTitle.${event.format}';
       final filePath = '${dir.path}/$fileName';
@@ -235,15 +232,12 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       final file = File(filePath);
       await file.writeAsBytes(fileBytes);
 
-      // Coba tampilkan notifikasi, tapi jangan hentikan alur jika gagal.
       try {
         await _notificationService.showDownloadCompleteNotification(
           fileName: fileName,
           filePath: filePath,
         );
       } catch (e) {
-        // Log error notifikasi, tapi jangan lempar exception ke UI
-        // karena file sudah berhasil disimpan.
         print('Gagal menampilkan notifikasi: $e');
       }
 

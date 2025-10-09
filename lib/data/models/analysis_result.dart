@@ -11,7 +11,7 @@ class AnalysisResult {
   final List<String> keywords;
   final List<String> references;
   final DateTime createdAt;
-  // BARU: Tambahkan field untuk daftar file asli
+
   final List<String> originalFileNames;
 
   AnalysisResult({
@@ -25,7 +25,7 @@ class AnalysisResult {
     required this.keywords,
     required this.references,
     required this.createdAt,
-    required this.originalFileNames, // Tambahkan di constructor
+    required this.originalFileNames,
   });
 
   factory AnalysisResult.fromJson(Map<String, dynamic> json) {
@@ -53,8 +53,9 @@ class AnalysisResult {
 DateTime _parseTimestamp(dynamic timestamp) {
   if (timestamp == null) return DateTime.now();
   if (timestamp is Timestamp) return timestamp.toDate();
-  if (timestamp is String)
+  if (timestamp is String) {
     return DateTime.tryParse(timestamp) ?? DateTime.now();
+  }
   if (timestamp is Map && timestamp.containsKey('_seconds')) {
     return Timestamp(timestamp['_seconds'], timestamp['_nanoseconds']).toDate();
   }

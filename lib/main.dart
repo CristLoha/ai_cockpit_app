@@ -11,20 +11,36 @@ import 'package:ai_cockpit_app/services/notification_service.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-
 import 'blocs/auth/auth_cubit.dart';
 
 final NotificationService notificationService = NotificationService();
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
   ErrorWidget.builder = (FlutterErrorDetails details) {
+    bool inDebug = false;
+    assert(inDebug = true, '');
+    if (!inDebug) {
+      return const Material(
+        child: Center(
+          child: Text(
+            'Terjadi kesalahan.',
+            style: TextStyle(color: Colors.white),
+          ),
+        ),
+      );
+    }
+
     return Material(
-      child: Container(
-        color: Colors.transparent,
-        child: Text(
-          'An error occurred.',
-          style: TextStyle(color: Colors.white, fontFamily: 'System'),
+      child: SingleChildScrollView(
+        child: Container(
+          color: Colors.redAccent.withOpacity(0.1),
+          padding: const EdgeInsets.all(16),
+          child: Text(
+            details.toString(),
+            style: const TextStyle(color: Colors.white),
+          ),
         ),
       ),
     );

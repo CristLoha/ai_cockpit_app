@@ -17,12 +17,7 @@ class HistoryCubit extends Cubit<HistoryState> {
     try {
       final historyList = await apiService.getChatHistory();
       emit(HistoryLoaded(historyList));
-    } catch (e, stackTrace) {
-      print('==================== HISTORY CUBIT ERROR ====================');
-      print('Error: $e');
-      print('StackTrace: $stackTrace');
-      print('=============================================================');
-
+    } catch (e) {
       emit(HistoryError(e.toString().replaceFirst("Exception: ", "")));
     }
   }

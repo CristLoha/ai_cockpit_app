@@ -21,14 +21,14 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
   }) : _chatRepository = chatRepository,
        _filePickerCubit = filePickerCubit,
        super(const AnalysisState()) {
-    // DIUBAH: Tambahkan event handler untuk progress
     on<AnalysisDocumentRequested>(_onAnalysisDocumentRequested);
     on<_AnalysisProgressUpdated>(_onAnalysisProgressUpdated);
   }
 
-  // DITAMBAHKAN: Method untuk handle update progress
   void _onAnalysisProgressUpdated(
-      _AnalysisProgressUpdated event, Emitter<AnalysisState> emit) {
+    _AnalysisProgressUpdated event,
+    Emitter<AnalysisState> emit,
+  ) {
     emit(state.copyWith(uploadProgress: event.progress));
   }
 
@@ -47,19 +47,16 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
       return;
     }
 
-    // DIUBAH: Reset progress saat mulai
     emit(state.copyWith(status: AnalysisStatus.loading, uploadProgress: 0.0));
     try {
       final selectedFile = files.first;
 
       final fileBytes = await File(selectedFile.filePath).readAsBytes();
 
-      // DIUBAH: Kirim callback ke repository
       final result = await _chatRepository.analyzeNewDocument(
         fileName: selectedFile.fileName,
         fileBytes: fileBytes,
         onProgress: (progress) {
-          // Tambahkan event baru untuk update progress di BLoC
           if (!isClosed) {
             add(_AnalysisProgressUpdated(progress));
           }
@@ -67,7 +64,13 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
       );
 
       _filePickerCubit.clearFiles();
-      emit(state.copyWith(status: AnalysisStatus.success, result: result, uploadProgress: 1.0));
+      emit(
+        state.copyWith(
+          status: AnalysisStatus.success,
+          result: result,
+          uploadProgress: 1.0,
+        ),
+      );
     } catch (e) {
       emit(
         state.copyWith(

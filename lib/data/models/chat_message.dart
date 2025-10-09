@@ -1,7 +1,9 @@
-import 'package:ai_cockpit_app/data/models/analysis_result.dart'; // FIX 1: Tambahkan import ini
-import 'package:cloud_firestore/cloud_firestore.dart'; // Import untuk handle Timestamp
+import 'package:ai_cockpit_app/data/models/analysis_result.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:equatable/equatable.dart';
+
 enum MessageSender { user, ai, system }
+
 enum MessageType { text, attachment }
 
 class ChatMessage extends Equatable {
@@ -12,7 +14,6 @@ class ChatMessage extends Equatable {
   final AnalysisResult? analysisResult;
   final DateTime timestamp;
 
-  // Tambahkan 'const' di sini
   const ChatMessage({
     required this.text,
     required this.sender,
@@ -37,7 +38,7 @@ class ChatMessage extends Equatable {
       timestamp: _parseTimestamp(json['timestamp']),
     );
   }
-  // Helper untuk konversi String ke Enum dengan aman
+
   static MessageSender _senderFromString(String? sender) {
     switch (sender) {
       case 'user':
@@ -53,22 +54,21 @@ class ChatMessage extends Equatable {
     return type == 'attachment' ? MessageType.attachment : MessageType.text;
   }
 
-  // Helper untuk parsing timestamp yang fleksibel
   static DateTime _parseTimestamp(dynamic timestamp) {
     if (timestamp == null) return DateTime.now();
-    // Jika dari Firestore langsung (tipe data Timestamp)
+
     if (timestamp is Timestamp) {
       return timestamp.toDate();
     }
-    // Jika dari JSON (tipe data String)
+
     if (timestamp is String) {
       return DateTime.parse(timestamp);
     }
-    // Jika dari JSON (tipe data int, yaitu milidetik)
+
     if (timestamp is int) {
       return DateTime.fromMillisecondsSinceEpoch(timestamp);
     }
-    // Fallback jika format tidak dikenali
+
     return DateTime.now();
   }
 }

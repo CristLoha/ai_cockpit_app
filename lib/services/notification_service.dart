@@ -9,7 +9,6 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
-    // DITAMBAHKAN: Minta izin notifikasi sebelum inisialisasi
     if (Platform.isAndroid) {
       await Permission.notification.request();
     }
@@ -17,7 +16,6 @@ class NotificationService {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
-    // DIUBAH: Minta izin di iOS saat inisialisasi
     const DarwinInitializationSettings initializationSettingsIOS =
         DarwinInitializationSettings(
           requestAlertPermission: true,
@@ -33,9 +31,8 @@ class NotificationService {
 
     await _notificationsPlugin.initialize(
       initializationSettings,
-      // Aksi saat notifikasi di-tap
+
       onDidReceiveNotificationResponse: (details) async {
-        // Simpan payload ke variabel lokal untuk menghindari "property promotion" warning.
         final String? payload = details.payload;
         if (payload != null && payload.isNotEmpty) {
           OpenFilex.open(payload);
@@ -43,11 +40,9 @@ class NotificationService {
       },
     );
 
-    // DITAMBAHKAN: Tangani notifikasi yang meluncurkan aplikasi dari state terminated
     await _handleNotificationLaunch();
   }
 
-  // DITAMBAHKAN: Method untuk memeriksa apakah aplikasi dibuka dari notifikasi
   Future<void> _handleNotificationLaunch() async {
     final NotificationAppLaunchDetails? launchDetails =
         await _notificationsPlugin.getNotificationAppLaunchDetails();
@@ -65,8 +60,8 @@ class NotificationService {
   }) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-          'download_channel', // ID channel
-          'Downloads', // Nama channel
+          'download_channel',
+          'Downloads',
           channelDescription: 'Notifikasi untuk download yang telah selesai.',
           importance: Importance.max,
           priority: Priority.high,
@@ -77,11 +72,11 @@ class NotificationService {
     );
 
     await _notificationsPlugin.show(
-      0, // ID notifikasi
+      0,
       'Download Selesai',
       'File "$fileName" telah disimpan.',
       platformChannelSpecifics,
-      payload: filePath, // Kirim path file agar bisa dibuka saat di-tap
+      payload: filePath,
     );
   }
 }

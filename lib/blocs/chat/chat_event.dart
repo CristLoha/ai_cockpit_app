@@ -24,7 +24,7 @@ class AddSystemMessage extends ChatEvent {
 }
 
 class ExportAnalysis extends ChatEvent {
-  final String format; // 'pdf' or 'docx'
+  final String format;
 
   const ExportAnalysis({required this.format});
 

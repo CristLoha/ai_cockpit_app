@@ -53,7 +53,6 @@ class AnalysisCard extends StatelessWidget {
                     size: 20,
                   ),
                   onPressed: () {
-                    // Logika untuk menyalin teks ke clipboard
                     Clipboard.setData(ClipboardData(text: analysisText));
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Hasil analisis disalin!')),

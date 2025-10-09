@@ -22,7 +22,6 @@ class UploadScreen extends StatelessWidget {
     return BlocListener<AuthCubit, AuthState>(
       listener: (context, state) {
         if (state is Authenticated) {
-          // Panggil fetchHistory() saat pengguna berhasil login
           context.read<HistoryCubit>().fetchHistory();
         }
       },
@@ -40,7 +39,6 @@ class UploadScreen extends StatelessWidget {
         ),
         body: MultiBlocListener(
           listeners: [
-            // Listener untuk navigasi setelah analisis dokumen BARU selesai.
             BlocListener<AnalysisBloc, AnalysisState>(
               listenWhen: (previous, current) =>
                   previous.status != current.status,
@@ -65,8 +63,6 @@ class UploadScreen extends StatelessWidget {
                 }
               },
             ),
-            // DIHAPUS: Listener untuk navigasi dari riwayat sudah tidak diperlukan lagi.
-            // Logika navigasi sekarang berada langsung di dalam HistoryDrawer.
           ],
           child: Center(
             child: SingleChildScrollView(
@@ -91,7 +87,6 @@ class UploadScreen extends StatelessWidget {
   }
 
   Widget _buildFileUploadArea(BuildContext context) {
-    // DIUBAH: Gunakan BlocBuilder untuk AnalysisBloc agar bisa merespons status loading
     return BlocBuilder<AnalysisBloc, AnalysisState>(
       builder: (context, analysisState) {
         return BlocBuilder<FilePickerCubit, FilePickerState>(
@@ -101,7 +96,6 @@ class UploadScreen extends StatelessWidget {
                 analysisState.status == AnalysisStatus.loading;
 
             return GestureDetector(
-              // Nonaktifkan tap saat sedang loading
               onTap: isLoading
                   ? null
                   : () => context.read<FilePickerCubit>().pickSingleFile(),
@@ -132,7 +126,6 @@ class UploadScreen extends StatelessWidget {
     );
   }
 
-  // DITAMBAHKAN: Widget helper untuk AnimatedSwitcher
   Widget _buildFileUploadChild(
     BuildContext context,
     bool isLoading,
@@ -141,21 +134,17 @@ class UploadScreen extends StatelessWidget {
     FilePickerState fileState,
   ) {
     if (isLoading) {
-      // Tampilan saat loading/upload
       return _buildLoadingView(context, analysisState.uploadProgress);
     } else if (hasFiles) {
-      // Tampilan jika ada file terpilih
       return _buildSelectedFileView(context, fileState.selectedFiles.first);
     } else {
-      // Tampilan kosong
       return _buildEmptyUploadView();
     }
   }
 
-  // DITAMBAHKAN: Widget untuk menampilkan progress upload
   Widget _buildLoadingView(BuildContext context, double progress) {
     return Center(
-      key: const ValueKey('loading'), // Key untuk AnimatedSwitcher
+      key: const ValueKey('loading'),
       child: Padding(
         padding: const EdgeInsets.all(24.0),
         child: Column(
@@ -202,10 +191,9 @@ class UploadScreen extends StatelessWidget {
     );
   }
 
-  // DIUBAH: Tambahkan Key untuk AnimatedSwitcher
   Widget _buildEmptyUploadView() {
     return Center(
-      key: const ValueKey('empty'), // Key untuk AnimatedSwitcher
+      key: const ValueKey('empty'),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -225,10 +213,10 @@ class UploadScreen extends StatelessWidget {
     );
   }
 
-  // DIUBAH: Widget ini sekarang hanya menampilkan satu file.
   Widget _buildSelectedFileView(BuildContext context, SelectedFile file) {
     return Center(
-      key: const ValueKey('selected'), // Key untuk AnimatedSwitcher
+      key: const ValueKey('selected'),
+
       child: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -260,8 +248,6 @@ class UploadScreen extends StatelessWidget {
   }
 
   Widget _buildAnalyzeButton(BuildContext context) {
-    // DIUBAH: Tombol loading sekarang hanya menampilkan teks statis saat loading,
-    // karena indikator utama sudah ada di area upload.
     return BlocBuilder<AnalysisBloc, AnalysisState>(
       builder: (context, analysisState) {
         return BlocBuilder<FilePickerCubit, FilePickerState>(
@@ -332,7 +318,6 @@ class UploadScreen extends StatelessWidget {
   Widget _buildAuthButton(BuildContext context) {
     return BlocBuilder<AuthCubit, AuthState>(
       builder: (context, state) {
-        // DITAMBAHKAN: Tampilkan indikator loading saat proses otentikasi berjalan.
         if (state is AuthLoading) {
           return const Padding(
             padding: EdgeInsets.symmetric(horizontal: 12.0),

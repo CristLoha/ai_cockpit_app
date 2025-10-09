@@ -1,9 +1,8 @@
 part of 'file_picker_cubit.dart';
 
-// Model untuk menyimpan informasi file yang dipilih
 class SelectedFile extends Equatable {
   final String fileName;
-  final String filePath; // Kita simpan path-nya, bukan byte-nya
+  final String filePath;
 
   const SelectedFile({required this.fileName, required this.filePath});
 

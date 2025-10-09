@@ -14,7 +14,6 @@ class ChatRepository {
     required Uint8List fileBytes,
     Function(double)? onProgress,
   }) async {
-    // Langsung teruskan ke ApiService
     return _apiService.analyzeDocument(
       fileBytes: fileBytes,
       fileName: fileName,
@@ -33,10 +32,7 @@ class ChatRepository {
     return _apiService.getChatMessages(chatId);
   }
 
-  // DITAMBAHKAN KEMBALI: Method ini dibutuhkan oleh HistoryCubit
   Future<List<ChatHistoryItem>> getChatHistoryList() async {
     return _apiService.getChatHistory();
   }
-
-
 }

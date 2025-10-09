@@ -1,5 +1,5 @@
-import 'dart:typed_data'; // FIX 1: Import yang hilang
-import 'package:dio/dio.dart'; // FIX 2: Import yang hilang
+import 'dart:typed_data';
+import 'package:dio/dio.dart';
 import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
@@ -21,7 +21,6 @@ class ApiService {
           options.headers['x-device-id'] = deviceId;
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
-            // DIUBAH: Jangan paksa refresh token setiap saat.
             final idToken = await user.getIdToken();
             options.headers['Authorization'] = 'Bearer $idToken';
           }
@@ -88,7 +87,6 @@ class ApiService {
       );
       return AIResponse.fromJson(response.data);
     } on DioException catch (e) {
-      // DIUBAH: Sembunyikan error server dari UI
       if (e.response?.statusCode == 429) throw GuestLimitExceededException();
       developer.log(
         'Error saat mengirim pertanyaan: ${e.response?.data ?? e.message}',
@@ -103,15 +101,12 @@ class ApiService {
     try {
       final response = await _dio.get('/chats');
       final List<dynamic> data = response.data;
-      // FIX 3: Ganti `fromApiJson` menjadi `fromJson` standar
+
       return data
           .map((item) => ChatHistoryItem.fromJson(item as Map<String, dynamic>))
           .toList();
     } on DioException catch (e) {
-      // DIUBAH: Tambahkan penanganan error otentikasi
       if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
-        // Error ini normal jika pengguna belum login, jadi kita kembalikan list kosong
-        // dan tidak perlu melempar exception yang akan ditampilkan sebagai error di UI.
         developer.log(
           'Gagal memuat riwayat: Pengguna belum login.',
           name: 'ApiService',
@@ -129,11 +124,9 @@ class ApiService {
 
   Future<Map<String, dynamic>> getChatMessages(String chatId) async {
     try {
-      // DIUBAH: Sesuaikan dengan endpoint backend terbaru
       final response = await _dio.get('/chats/$chatId');
       return response.data as Map<String, dynamic>;
     } catch (e) {
-      // DIUBAH: Sembunyikan error server dari UI
       developer.log('Error saat memuat detail chat: $e', name: 'ApiService');
       throw Exception('Gagal memuat detail chat. Silakan coba lagi.');
     }
