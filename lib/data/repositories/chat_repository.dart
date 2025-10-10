@@ -36,6 +36,6 @@ class ChatRepository {
   }
 
   Future<List<ChatHistoryItem>> getChatHistoryList() async {
-    return _apiService.getChatHistory();
+    return _apiService.getChatHistoryList();
   }
 }

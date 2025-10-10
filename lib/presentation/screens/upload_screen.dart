@@ -19,12 +19,6 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   @override
-  void initState() {
-    super.initState();
-    context.read<AnalysisBloc>().add(AnalysisReset());
-  }
-
-  @override
   Widget build(BuildContext context) {
     final authState = context.watch<AuthCubit>().state;
     final isAuthenticated = authState is Authenticated;

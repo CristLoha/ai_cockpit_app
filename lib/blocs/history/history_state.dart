@@ -1,28 +1,30 @@
 part of 'history_cubit.dart';
 
-sealed class HistoryState extends Equatable {
-  const HistoryState();
-
-  @override
-  List<Object> get props => [];
-}
-
-final class HistoryInitial extends HistoryState {}
-
-final class HistoryLoading extends HistoryState {}
-
-final class HistoryLoaded extends HistoryState {
+abstract class HistoryState extends Equatable {
   final List<ChatHistoryItem> history;
-  const HistoryLoaded(this.history);
+  const HistoryState(this.history);
 
   @override
   List<Object> get props => [history];
 }
 
-final class HistoryError extends HistoryState {
+class HistoryInitial extends HistoryState {
+  HistoryInitial() : super([]);
+}
+
+class HistoryLoading extends HistoryState {
+  const HistoryLoading(super.history);
+}
+
+class HistoryLoaded extends HistoryState {
+  const HistoryLoaded(super.history);
+}
+
+class HistoryError extends HistoryState {
   final String message;
-  const HistoryError(this.message);
 
   @override
-  List<Object> get props => [message];
+  List<Object> get props => [message, history];
+
+  const HistoryError(this.message, super.history);
 }

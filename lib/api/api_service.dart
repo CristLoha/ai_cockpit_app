@@ -123,7 +123,7 @@ class ApiService {
     }
   }
 
-  Future<List<ChatHistoryItem>> getChatHistory() async {
+  Future<List<ChatHistoryItem>> getChatHistoryList() async {
     try {
       final response = await _dio.get('/chats');
       final List<dynamic> data = response.data;
@@ -155,6 +155,44 @@ class ApiService {
     } catch (e) {
       developer.log('Error saat memuat detail chat: $e', name: 'ApiService');
       throw Exception('Gagal memuat detail chat. Silakan coba lagi.');
+    }
+  }
+
+  Future<void> deleteChat(String chatId) async {
+    try {
+      await _dio.delete('/chats/$chatId');
+      developer.log('Chat $chatId berhasil dihapus.', name: 'ApiService');
+    } on DioException catch (e) {
+      developer.log(
+        'Error saat menghapus chat: ${e.response?.data ?? e.message}',
+        name: 'ApiService',
+      );
+      throw Exception('Gagal menghapus riwayat. Coba lagi nanti.');
+    } catch (e) {
+      developer.log(
+        'Error tidak diketahui saat menghapus chat: $e',
+        name: 'ApiService',
+      );
+      throw Exception('Terjadi kesalahan yang tidak diketahui.');
+    }
+  }
+
+  Future<void> deleteAllChats() async {
+    try {
+      await _dio.delete('/chats');
+      developer.log('Semua chat berhasil dihapus.', name: 'ApiService');
+    } on DioException catch (e) {
+      developer.log(
+        'Error saat menghapus semua chat: ${e.response?.data ?? e.message}',
+        name: 'ApiService',
+      );
+      throw Exception('Gagal menghapus semua riwayat. Coba lagi nanti.');
+    } catch (e) {
+      developer.log(
+        'Error tidak diketahui saat menghapus semua chat: $e',
+        name: 'ApiService',
+      );
+      throw Exception('Terjadi kesalahan yang tidak diketahui.');
     }
   }
 }
