@@ -21,10 +21,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   @override
   void initState() {
     super.initState();
-    // Jika widget.result disediakan, itu berarti analisis baru saja selesai.
-    // Dalam kasus ini, kita menambahkan pesan analisis awal ke ChatBloc.
-    // Jika tidak (navigasi dari riwayat), ChatBloc seharusnya sudah
-    // diinstruksikan untuk memuat chat oleh HistoryDrawer.
+
     if (widget.result != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final initialAnalysisMessage = ChatMessage(
@@ -215,17 +212,6 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
             ],
           ),
         ),
-        // const PopupMenuDivider(),
-        // PopupMenuItem<String>(
-        //   value: 'docx',
-        //   child: Row(
-        //     children: [
-        //       Icon(Icons.description_outlined, color: Colors.blue.shade300),
-        //       const SizedBox(width: 12),
-        //       const Text('Ekspor sebagai DOCX'),
-        //     ],
-        //   ),
-        // ),
       ],
     );
   }
@@ -270,12 +256,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 keyword,
                 style: GoogleFonts.inter(color: Colors.white70),
               ),
-              backgroundColor: Colors.deepPurple.withAlpha(
-                51,
-              ), // Already using withAlpha
-              side: BorderSide(
-                color: Colors.deepPurple.withAlpha(128),
-              ), // Already using withAlpha
+              backgroundColor: Colors.deepPurple.withAlpha(51),
+              side: BorderSide(color: Colors.deepPurple.withAlpha(128)),
               padding: const EdgeInsets.symmetric(
                 horizontal: 8.0,
                 vertical: 4.0,
