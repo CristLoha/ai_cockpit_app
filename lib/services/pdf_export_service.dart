@@ -9,7 +9,6 @@ class PdfExportService {
   Future<Uint8List> generateAnalysisPdf(AnalysisResult result) async {
     final pdf = pw.Document();
 
-    // Ambil font dari Google Fonts
     final spaceGroteskBold = await PdfGoogleFonts.spaceGroteskBold();
     final interRegular = await PdfGoogleFonts.interRegular();
     final interBold = await PdfGoogleFonts.interBold();

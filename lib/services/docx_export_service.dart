@@ -6,19 +6,15 @@ import 'package:intl/intl.dart';
 
 class DocxExportService {
   Future<Uint8List?> generateAnalysisDocx(AnalysisResult result) async {
-    // 1. Muat file template dari assets
     final data = await rootBundle.load(
       'assets/templates/analysis_template.docx',
     );
     final bytes = data.buffer.asUint8List();
 
-    // 2. Buat template dari byte
     final docx = await DocxTemplate.fromBytes(bytes);
 
-    // 3. Siapkan konten untuk mengisi placeholder
     final content = Content();
 
-    // Teks biasa
     content.add(TextContent("title", result.title));
     content.add(TextContent("authors", result.authors.join(', ')));
     content.add(TextContent("publication", result.publication));
@@ -31,8 +27,6 @@ class DocxExportService {
     content.add(TextContent("summary", result.summary));
     content.add(TextContent("methodology", result.methodology));
 
-    // List/Loop
-    // DIUBAH: Gunakan PlainContent untuk list string sederhana agar cocok dengan template {{.}}
     content.add(
       ListContent("keywords", [
         for (final k in result.keywords) PlainContent(k),
@@ -49,7 +43,6 @@ class DocxExportService {
       ]),
     );
 
-    // 4. Hasilkan dokumen final
     final generatedBytes = await docx.generate(content);
 
     if (generatedBytes == null) {

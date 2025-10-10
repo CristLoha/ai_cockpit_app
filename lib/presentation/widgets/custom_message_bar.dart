@@ -3,12 +3,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 class CustomMessageBar extends StatefulWidget {
   final void Function(String) onSend;
-  // Dibuat opsional (nullable) agar bisa disembunyikan
+
   final VoidCallback? onAttach;
   final List<String> selectedFileNames;
-  // Dibuat opsional (nullable)
+
   final void Function(String)? onRemoveFile;
-  // Hint text sekarang wajib diisi dari luar untuk fleksibilitas
+
   final String hintText;
 
   const CustomMessageBar({
@@ -85,8 +85,7 @@ class _CustomMessageBarState extends State<CustomMessageBar> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    // Gunakan ValueListenableBuilder agar hanya tombol send yang rebuild saat teks berubah.
-    // Ini lebih efisien daripada memanggil setState di seluruh widget.
+
     return ValueListenableBuilder<TextEditingValue>(
       valueListenable: _controller,
       builder: (context, value, child) {
@@ -105,12 +104,10 @@ class _CustomMessageBarState extends State<CustomMessageBar> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              // Tampilkan file chips jika ada file yang dipilih
               if (hasFiles) _buildFileChips(),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  // Tombol attach hanya akan muncul jika fungsi `onAttach` disediakan
                   if (widget.onAttach != null)
                     IconButton(
                       icon: const Icon(Icons.attach_file_outlined),
@@ -145,7 +142,7 @@ class _CustomMessageBarState extends State<CustomMessageBar> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.send_rounded),
-                    // Tombol send akan nonaktif (null) jika tidak ada teks atau file
+
                     onPressed: canSend ? _handleSend : null,
                     color: canSend ? theme.colorScheme.primary : Colors.grey,
                     tooltip: 'Kirim',

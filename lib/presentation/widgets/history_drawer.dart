@@ -38,7 +38,7 @@ class HistoryDrawer extends StatelessWidget {
               },
             );
           }
-          // Jika tidak terautentikasi
+
           return _buildUnauthenticatedView(context);
         },
       ),
@@ -124,7 +124,6 @@ class HistoryDrawer extends StatelessWidget {
 
   Widget _buildHistoryList(HistoryState historyState) {
     return BlocConsumer<HistoryCubit, HistoryState>(
-      // Gunakan state yang sudah ada dari builder di atas
       listener: (context, state) {
         if (state is HistoryError) {
           ScaffoldMessenger.of(context)
@@ -138,12 +137,10 @@ class HistoryDrawer extends StatelessWidget {
         }
       },
       builder: (context, historyState) {
-        // Builder ini sekarang hanya fokus pada rendering list
         if (historyState is HistoryLoading && historyState.history.isEmpty) {
           return _buildShimmerLoading();
         }
 
-        // Tangani kondisi error saat tidak ada riwayat yang bisa ditampilkan
         if (historyState is HistoryError && historyState.history.isEmpty) {
           return _buildErrorState(context, historyState.message);
         }
@@ -229,10 +226,7 @@ class HistoryDrawer extends StatelessWidget {
     final chatBloc = context.read<ChatBloc>();
     final navigator = Navigator.of(context);
 
-    // Tutup drawer terlebih dahulu
-    navigator.pop();
-    // Beri jeda agar transisi drawer selesai
-    await Future.delayed(const Duration(milliseconds: 50));
+    await navigator.maybePop();
 
     chatBloc.add(LoadChat(chatId));
 
