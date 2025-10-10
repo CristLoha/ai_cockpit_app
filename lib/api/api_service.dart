@@ -19,17 +19,14 @@ class ApiService {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
-   
           final deviceId = await deviceRepository.getDeviceId();
           options.headers['x-device-id'] = deviceId;
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
-        
             final idToken = await user.getIdToken(true);
             options.headers['Authorization'] = 'Bearer $idToken';
           }
 
-         
           developer.log(
             '--- REQUEST DIKIRIM KE SERVER ---',
             name: 'ApiService',
@@ -40,7 +37,6 @@ class ApiService {
             '------------------------------------',
             name: 'ApiService',
           );
-        
 
           return handler.next(options);
         },
@@ -54,6 +50,7 @@ class ApiService {
     required Uint8List fileBytes,
     required String fileName,
     Function(double)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     try {
       final formData = FormData.fromMap({
@@ -63,6 +60,7 @@ class ApiService {
       final response = await _dio.post(
         '/analyze',
         data: formData,
+        cancelToken: cancelToken,
         onSendProgress: (int sent, int total) {
           if (total > 0) {
             double progress = sent / total;
@@ -76,19 +74,19 @@ class ApiService {
       );
       return AnalysisResult.fromJson(response.data);
     } on DioException catch (e) {
-  
-    
+      // Jika error adalah karena pembatalan, lempar kembali agar BLoC bisa menanganinya.
+      if (CancelToken.isCancel(e)) {
+        rethrow;
+      }
+
       String finalErrorMessage = 'Terjadi kesalahan yang tidak diketahui.';
 
-     
       if (e.response != null) {
-   
         if (e.response!.data is Map<String, dynamic>) {
           final responseData = e.response!.data as Map<String, dynamic>;
           finalErrorMessage =
               responseData['message'] ?? 'Gagal menganalisis dokumen.';
         } else {
-       
           finalErrorMessage = e.response!.data.toString();
         }
       } else {

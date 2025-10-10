@@ -9,6 +9,7 @@ import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
 import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'dart:io';
+import 'dart:developer' as developer;
 import 'package:path_provider/path_provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:permission_handler/permission_handler.dart';
@@ -238,7 +239,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           filePath: filePath,
         );
       } catch (e) {
-        print('Gagal menampilkan notifikasi: $e');
+        developer.log('Gagal menampilkan notifikasi: $e');
       }
 
       emit(state.copyWith(status: ChatStatus.exportSuccess));

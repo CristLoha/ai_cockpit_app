@@ -6,6 +6,7 @@ import 'package:ai_cockpit_app/presentation/widgets/analysis_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'dart:developer' as developer;
 
 class AnalysisResultScreen extends StatefulWidget {
   final AnalysisResult? result;
@@ -76,7 +77,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     ),
                   );
               } else if (state.status == ChatStatus.exportFailure) {
-                print(state.errorMessage);
+                developer.log('${state.errorMessage}');
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
@@ -267,8 +268,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 keyword,
                 style: GoogleFonts.inter(color: Colors.white70),
               ),
-              backgroundColor: Colors.deepPurple.withOpacity(0.2),
-              side: BorderSide(color: Colors.deepPurple.withOpacity(0.5)),
+              backgroundColor: Colors.deepPurple.withAlpha(51),
+              side: BorderSide(color: Colors.deepPurple.withAlpha(128)),
               padding: const EdgeInsets.symmetric(
                 horizontal: 8.0,
                 vertical: 4.0,

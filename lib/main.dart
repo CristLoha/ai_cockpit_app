@@ -1,5 +1,5 @@
 import 'dart:async';
-
+import 'dart:developer' as developer;
 import 'package:ai_cockpit_app/api/api_service.dart';
 import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
@@ -18,15 +18,10 @@ import 'blocs/auth/auth_cubit.dart';
 final NotificationService notificationService = NotificationService();
 
 void main() {
-  // GANTI FUNGSI main() LAMA-MU DENGAN INI
   runZonedGuarded(
     () async {
-      // Tambahkan async di sini
-      // Semua kode inisialisasi aslimu aman di dalam sini
       WidgetsFlutterBinding.ensureInitialized();
-
       ErrorWidget.builder = (FlutterErrorDetails details) {
-        // Kode ErrorWidget-mu tetap sama
         bool inDebug = false;
         assert(inDebug = true, '');
         if (!inDebug) {
@@ -42,7 +37,7 @@ void main() {
         return Material(
           child: SingleChildScrollView(
             child: Container(
-              color: Colors.redAccent.withOpacity(0.1),
+              color: Colors.redAccent.withAlpha(26),
               padding: const EdgeInsets.all(16),
               child: Text(
                 details.toString(),
@@ -61,15 +56,9 @@ void main() {
       runApp(const MyApp());
     },
     (error, stackTrace) {
-      // Jaring ini akan menangkap SEMUA error yang tidak tertangani
-      print("==============================================");
-      print("          ERROR TERTANGKAP DI LEVEL ATAS      ");
-      print("==============================================");
-      print("PESAN ERROR: $error");
-      print("----------------------------------------------");
-      print("LOKASI FILE (STACK TRACE):");
-      print(stackTrace);
-      print("==============================================");
+      developer.log("PESAN ERROR: $error");
+      developer.log("LOKASI FILE (STACK TRACE):");
+      developer.log('$stackTrace');
     },
   );
 }
@@ -108,6 +97,7 @@ class MyApp extends StatelessWidget {
             create: (context) => AnalysisBloc(
               chatRepository: context.read<ChatRepository>(),
               filePickerCubit: context.read<FilePickerCubit>(),
+              authCubit: context.read<AuthCubit>(),
             ),
           ),
         ],

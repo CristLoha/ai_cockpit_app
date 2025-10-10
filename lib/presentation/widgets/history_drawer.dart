@@ -26,8 +26,6 @@ class HistoryDrawer extends StatelessWidget {
       child: Column(
         children: [
           _buildHeader(context),
-          _buildNewChatButton(context),
-          const Divider(color: Colors.white12),
           Expanded(
             child: BlocBuilder<AuthCubit, AuthState>(
               builder: (context, authState) {
@@ -65,37 +63,6 @@ class HistoryDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildNewChatButton(BuildContext context) {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ElevatedButton(
-        onPressed: isAuthenticated ? onNewChat : null,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).primaryColor,
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.add_circle_outline),
-            const SizedBox(width: 8),
-            Text(
-              'New Analysis',
-              style: TextStyle(
-                fontSize: 16,
-                color: isAuthenticated ? Colors.white : Colors.grey,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildHistoryList() {
     return BlocBuilder<HistoryCubit, HistoryState>(
       builder: (context, historyState) {
@@ -107,7 +74,7 @@ class HistoryDrawer extends StatelessWidget {
             return _buildEmptyState();
           }
           return ListView.builder(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.only(top: 16, bottom: 8),
             itemCount: historyState.history.length,
             itemBuilder: (context, index) {
               final item = historyState.history[index];
@@ -132,20 +99,20 @@ class HistoryDrawer extends StatelessWidget {
         elevation: 2,
         child: InkWell(
           borderRadius: BorderRadius.circular(8),
-          onTap: () {
+          onTap: () async {
             final chatBloc = context.read<ChatBloc>();
             final navigator = Navigator.of(context);
 
+            // Tutup drawer terlebih dahulu
             navigator.pop();
+            // Beri jeda agar transisi drawer selesai
+            await Future.delayed(const Duration(milliseconds: 50));
 
             chatBloc.add(LoadChat(item.id));
 
             navigator.push(
               MaterialPageRoute(
-                builder: (_) => BlocProvider.value(
-                  value: chatBloc,
-                  child: AnalysisResultScreen(chatId: item.id),
-                ),
+                builder: (_) => AnalysisResultScreen(chatId: item.id),
               ),
             );
           },
@@ -254,7 +221,7 @@ class HistoryDrawer extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       child: Shimmer.fromColors(
         baseColor: const Color(0xFF2A2A2A),
-        highlightColor: Colors.deepPurple.withOpacity(0.1),
+        highlightColor: Colors.deepPurple.withAlpha(26),
         child: ListView.builder(
           itemCount: 6,
           itemBuilder: (_, __) => Padding(

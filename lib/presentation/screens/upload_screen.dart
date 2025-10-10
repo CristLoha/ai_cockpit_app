@@ -1,6 +1,5 @@
 import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
 import 'package:ai_cockpit_app/blocs/auth/auth_cubit.dart';
-import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
 import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
 import 'package:ai_cockpit_app/presentation/screens/analysis_result_screen.dart';
@@ -11,8 +10,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class UploadScreen extends StatelessWidget {
+class UploadScreen extends StatefulWidget {
   const UploadScreen({super.key});
+
+  @override
+  State<UploadScreen> createState() => _UploadScreenState();
+}
+
+class _UploadScreenState extends State<UploadScreen> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<AnalysisBloc>().add(AnalysisReset());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,63 +35,80 @@ class UploadScreen extends StatelessWidget {
           context.read<HistoryCubit>().fetchHistory();
         }
       },
-      child: Scaffold(
-        backgroundColor: const Color(0xFF1A1A1A),
-        appBar: _buildAppBar(context, authState),
-        drawer: HistoryDrawer(
-          isAuthenticated: isAuthenticated,
-          onNewChat: () {
-            context.read<FilePickerCubit>().clearFiles();
-
-            context.read<ChatBloc>().add(ClearChat());
-            Navigator.pop(context);
-          },
-        ),
-        body: MultiBlocListener(
-          listeners: [
-            BlocListener<AnalysisBloc, AnalysisState>(
-              listenWhen: (previous, current) =>
-                  previous.status != current.status,
-              listener: (context, state) {
-                if (state.status == AnalysisStatus.success &&
-                    state.result != null) {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => AnalysisResultScreen(
-                        result: state.result!,
-                        chatId: state.result!.chatId,
+      child: BlocBuilder<AnalysisBloc, AnalysisState>(
+        builder: (context, analysisState) {
+          return PopScope(
+            canPop: analysisState.status != AnalysisStatus.loading,
+            onPopInvokedWithResult: (bool didPop, _) {
+              // Jika pop dicegah (karena canPop false), itu berarti
+              // analisis sedang berjalan. Kirim event untuk membatalkan.
+              if (!didPop && analysisState.status == AnalysisStatus.loading) {
+                context.read<AnalysisBloc>().add(AnalysisCancelled());
+              }
+            },
+            child: Scaffold(
+              backgroundColor: const Color(0xFF1A1A1A),
+              appBar: _buildAppBar(context, authState),
+              drawer: HistoryDrawer(
+                isAuthenticated: isAuthenticated,
+                onNewChat: () => Navigator.pop(context),
+              ),
+              body: MultiBlocListener(
+                listeners: [
+                  BlocListener<AnalysisBloc, AnalysisState>(
+                    listenWhen: (previous, current) =>
+                        previous.status != current.status,
+                    listener: (context, state) {
+                      if (state.status == AnalysisStatus.success &&
+                          state.result != null) {
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (_) => AnalysisResultScreen(
+                                  result: state.result!,
+                                  chatId: state.result!.chatId,
+                                ),
+                              ),
+                            )
+                            .then((_) {
+                              if (mounted) {
+                                context.read<AnalysisBloc>().add(
+                                  AnalysisReset(),
+                                );
+                              }
+                            });
+                      } else if (state.status == AnalysisStatus.failure) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('${state.errorMessage}'),
+                            backgroundColor: Colors.redAccent,
+                          ),
+                        );
+                      }
+                    },
+                  ),
+                ],
+                child: Center(
+                  child: SingleChildScrollView(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24.0),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          WelcomeMessage(authState: authState),
+                          const SizedBox(height: 40),
+                          _buildFileUploadArea(context),
+                          const SizedBox(height: 40),
+                          _buildAnalyzeButton(context),
+                        ],
                       ),
                     ),
-                  );
-                } else if (state.status == AnalysisStatus.failure) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text('${state.errorMessage}'),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                }
-              },
-            ),
-          ],
-          child: Center(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24.0),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    WelcomeMessage(authState: authState),
-                    const SizedBox(height: 40),
-                    _buildFileUploadArea(context),
-                    const SizedBox(height: 40),
-                    _buildAnalyzeButton(context),
-                  ],
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
@@ -104,7 +131,7 @@ class UploadScreen extends StatelessWidget {
                   width: double.infinity,
                   constraints: const BoxConstraints(minHeight: 200),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF212121).withOpacity(0.5),
+                    color: const Color(0xFF212121).withAlpha(128),
                     borderRadius: BorderRadius.circular(22),
                   ),
                   child: AnimatedSwitcher(
@@ -222,9 +249,11 @@ class UploadScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Material(
-              color: Colors.grey.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.grey.withAlpha(26),
+                borderRadius: BorderRadius.circular(12),
+              ),
               child: ListTile(
                 leading: const Icon(
                   Icons.insert_drive_file_rounded,
@@ -405,7 +434,6 @@ class UploadScreen extends StatelessWidget {
               ),
               onPressed: () {
                 context.read<AuthCubit>().signOut();
-                context.read<ChatBloc>().add(ClearChat());
                 Navigator.of(dialogContext).pop();
               },
               child: Text(

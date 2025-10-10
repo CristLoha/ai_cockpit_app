@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:ai_cockpit_app/api/api_service.dart';
+import 'package:dio/dio.dart';
 import 'package:ai_cockpit_app/data/models/ai_response.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
@@ -13,11 +14,13 @@ class ChatRepository {
     required String fileName,
     required Uint8List fileBytes,
     Function(double)? onProgress,
+    CancelToken? cancelToken,
   }) async {
     return _apiService.analyzeDocument(
       fileBytes: fileBytes,
       fileName: fileName,
       onProgress: onProgress,
+      cancelToken: cancelToken,
     );
   }
 

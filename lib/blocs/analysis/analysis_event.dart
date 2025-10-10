@@ -7,6 +7,10 @@ sealed class AnalysisEvent extends Equatable {
   List<Object> get props => [];
 }
 
+class AnalysisCancelled extends AnalysisEvent {}
+
+class AnalysisReset extends AnalysisEvent {}
+
 class AnalysisDocumentRequested extends AnalysisEvent {}
 
 class AdvancedAnalysisRequested extends AnalysisEvent {

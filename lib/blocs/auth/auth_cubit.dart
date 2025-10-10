@@ -2,6 +2,7 @@ import 'package:bloc/bloc.dart';
 import 'package:equatable/equatable.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'dart:developer' as developer;
 part 'auth_state.dart';
 
 class AuthCubit extends Cubit<AuthState> {
@@ -23,6 +24,7 @@ class AuthCubit extends Cubit<AuthState> {
       final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
 
       if (googleUser == null) {
+        if (isClosed) return;
         emit(Unauthenticated());
         return;
       }
@@ -37,8 +39,9 @@ class AuthCubit extends Cubit<AuthState> {
 
       await _firebaseAuth.signInWithCredential(credential);
     } catch (e) {
-      print("Google Sign-In Error: $e");
+      developer.log("Google Sign-In Error: $e");
 
+      if (isClosed) return;
       emit(Unauthenticated());
     }
   }

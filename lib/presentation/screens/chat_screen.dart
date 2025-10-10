@@ -127,7 +127,7 @@ class _ChatScreenState extends State<ChatScreen> {
         color: const Color(0xFF2D2D2D),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withAlpha(51),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -160,9 +160,9 @@ class _ChatScreenState extends State<ChatScreen> {
       margin: const EdgeInsets.symmetric(horizontal: 20),
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withAlpha(26),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.redAccent.withOpacity(0.3)),
+        border: Border.all(color: Colors.redAccent.withAlpha(77)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
