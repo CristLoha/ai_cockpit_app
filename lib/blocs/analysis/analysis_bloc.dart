@@ -1,5 +1,5 @@
 import 'dart:io';
-
+import 'dart:developer' as developer;
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
@@ -48,9 +48,9 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
     }
 
     emit(state.copyWith(status: AnalysisStatus.loading, uploadProgress: 0.0));
+
     try {
       final selectedFile = files.first;
-
       final fileBytes = await File(selectedFile.filePath).readAsBytes();
 
       final result = await _chatRepository.analyzeNewDocument(
@@ -71,7 +71,11 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
           uploadProgress: 1.0,
         ),
       );
-    } catch (e) {
+    } catch (e, stackTrace) {
+
+      developer.log("PESAN ERROR: $e");
+      developer.log("LOKASI FILE (STACK TRACE):");
+      developer.log('$stackTrace');
       emit(
         state.copyWith(
           status: AnalysisStatus.failure,

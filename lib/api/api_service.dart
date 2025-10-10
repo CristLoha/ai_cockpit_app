@@ -13,17 +13,35 @@ class ApiService {
   final DeviceRepository deviceRepository;
 
   ApiService({required this.deviceRepository})
-    : _dio = Dio(BaseOptions(baseUrl: 'http://10.0.2.2:3000/api')) {
+    : _dio = Dio(
+        BaseOptions(baseUrl: 'https://ai-cockpit-backend.vercel.app/api'),
+      ) {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+   
           final deviceId = await deviceRepository.getDeviceId();
           options.headers['x-device-id'] = deviceId;
           final user = FirebaseAuth.instance.currentUser;
           if (user != null) {
-            final idToken = await user.getIdToken();
+        
+            final idToken = await user.getIdToken(true);
             options.headers['Authorization'] = 'Bearer $idToken';
           }
+
+         
+          developer.log(
+            '--- REQUEST DIKIRIM KE SERVER ---',
+            name: 'ApiService',
+          );
+          developer.log('URL: ${options.uri}', name: 'ApiService');
+          developer.log('HEADERS: ${options.headers}', name: 'ApiService');
+          developer.log(
+            '------------------------------------',
+            name: 'ApiService',
+          );
+        
+
           return handler.next(options);
         },
         onResponse: (response, handler) => handler.next(response),
@@ -58,21 +76,31 @@ class ApiService {
       );
       return AnalysisResult.fromJson(response.data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 401 || e.response?.statusCode == 403) {
-        developer.log(
-          'Authentication error during analysis: ${e.response?.data ?? e.message}',
-          name: 'ApiService',
-        );
-        throw Exception(
-          'Akses ditolak. Silakan Sign In untuk menganalisis dokumen.',
-        );
+  
+    
+      String finalErrorMessage = 'Terjadi kesalahan yang tidak diketahui.';
+
+     
+      if (e.response != null) {
+   
+        if (e.response!.data is Map<String, dynamic>) {
+          final responseData = e.response!.data as Map<String, dynamic>;
+          finalErrorMessage =
+              responseData['message'] ?? 'Gagal menganalisis dokumen.';
+        } else {
+       
+          finalErrorMessage = e.response!.data.toString();
+        }
+      } else {
+        // Jika tidak ada respons sama sekali (misal: masalah jaringan)
+        finalErrorMessage = 'Gagal terhubung ke server. Periksa koneksi Anda.';
       }
 
       developer.log(
-        'Error saat menganalisis dokumen: ${e.response?.data ?? e.message}',
+        'Error saat menganalisis dokumen: $finalErrorMessage',
         name: 'ApiService',
       );
-      throw Exception('Gagal menganalisis dokumen. Silakan coba lagi.');
+      throw Exception(finalErrorMessage);
     }
   }
 

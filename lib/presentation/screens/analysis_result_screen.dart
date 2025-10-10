@@ -81,9 +81,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
                     SnackBar(
-                      content: Text(
-                        'Gagal mengekspor: ${state.errorMessage ?? "Terjadi kesalahan"}',
-                      ),
+                      content: Text('Gagal mengekspor: "Terjadi kesalahan"}'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );

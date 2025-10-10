@@ -56,7 +56,7 @@ class UploadScreen extends StatelessWidget {
                 } else if (state.status == AnalysisStatus.failure) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('Error: ${state.errorMessage}'),
+                      content: Text('${state.errorMessage}'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );

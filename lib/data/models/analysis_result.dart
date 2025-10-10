@@ -11,7 +11,6 @@ class AnalysisResult {
   final List<String> keywords;
   final List<String> references;
   final DateTime createdAt;
-
   final List<String> originalFileNames;
 
   AnalysisResult({
@@ -33,19 +32,26 @@ class AnalysisResult {
         ? json['analysis'] as Map<String, dynamic>
         : json;
 
+    List<String> safeListParse(dynamic list) {
+      if (list is List) {
+        return list.map((e) => e.toString()).toList();
+      }
+
+      return [];
+    }
+
     return AnalysisResult(
-      chatId: json['chatId'] ?? data['id'] ?? '',
-      title: data['title'] ?? 'Analisis Gabungan',
-      authors: List<String>.from(data['authors'] ?? []),
-      publication: data['publication'] ?? '',
-      summary: data['summary'] ?? '',
-      keyPoints: List<String>.from(data['keyPoints'] ?? []),
-      methodology: data['methodology'] ?? '',
-      keywords: List<String>.from(data['keywords'] ?? []),
-      references: List<String>.from(data['references'] ?? []),
+      chatId: (json['chatId'] ?? data['id'] ?? '').toString(),
+      title: (data['title'] ?? 'Analisis Gabungan').toString(),
+      authors: safeListParse(data['authors']),
+      publication: (data['publication'] ?? '').toString(),
+      summary: (data['summary'] ?? '').toString(),
+      keyPoints: safeListParse(data['keyPoints']),
+      methodology: (data['methodology'] ?? '').toString(),
+      keywords: safeListParse(data['keywords']),
+      references: safeListParse(data['references']),
       createdAt: _parseTimestamp(data['createdAt'] ?? json['createdAt']),
-      // BARU: Parsing originalFileNames dari JSON
-      originalFileNames: List<String>.from(data['originalFileNames'] ?? []),
+      originalFileNames: safeListParse(data['originalFileNames']),
     );
   }
 }
@@ -56,9 +62,13 @@ DateTime _parseTimestamp(dynamic timestamp) {
   if (timestamp is String) {
     return DateTime.tryParse(timestamp) ?? DateTime.now();
   }
+
   if (timestamp is Map && timestamp.containsKey('_seconds')) {
-    return Timestamp(timestamp['_seconds'], timestamp['_nanoseconds']).toDate();
+    final seconds = int.tryParse(timestamp['_seconds'].toString()) ?? 0;
+    final nanoseconds = int.tryParse(timestamp['_nanoseconds'].toString()) ?? 0;
+    return Timestamp(seconds, nanoseconds).toDate();
   }
   if (timestamp is int) return DateTime.fromMillisecondsSinceEpoch(timestamp);
+
   return DateTime.now();
 }

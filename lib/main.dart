@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:ai_cockpit_app/api/api_service.dart';
 import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
@@ -15,42 +17,61 @@ import 'blocs/auth/auth_cubit.dart';
 
 final NotificationService notificationService = NotificationService();
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
+void main() {
+  // GANTI FUNGSI main() LAMA-MU DENGAN INI
+  runZonedGuarded(
+    () async {
+      // Tambahkan async di sini
+      // Semua kode inisialisasi aslimu aman di dalam sini
+      WidgetsFlutterBinding.ensureInitialized();
 
-  ErrorWidget.builder = (FlutterErrorDetails details) {
-    bool inDebug = false;
-    assert(inDebug = true, '');
-    if (!inDebug) {
-      return const Material(
-        child: Center(
-          child: Text(
-            'Terjadi kesalahan.',
-            style: TextStyle(color: Colors.white),
+      ErrorWidget.builder = (FlutterErrorDetails details) {
+        // Kode ErrorWidget-mu tetap sama
+        bool inDebug = false;
+        assert(inDebug = true, '');
+        if (!inDebug) {
+          return const Material(
+            child: Center(
+              child: Text(
+                'Terjadi kesalahan.',
+                style: TextStyle(color: Colors.white),
+              ),
+            ),
+          );
+        }
+        return Material(
+          child: SingleChildScrollView(
+            child: Container(
+              color: Colors.redAccent.withOpacity(0.1),
+              padding: const EdgeInsets.all(16),
+              child: Text(
+                details.toString(),
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
           ),
-        ),
+        );
+      };
+
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
       );
-    }
+      await notificationService.init();
 
-    return Material(
-      child: SingleChildScrollView(
-        child: Container(
-          color: Colors.redAccent.withOpacity(0.1),
-          padding: const EdgeInsets.all(16),
-          child: Text(
-            details.toString(),
-            style: const TextStyle(color: Colors.white),
-          ),
-        ),
-      ),
-    );
-  };
-
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-
-  await notificationService.init();
-
-  runApp(const MyApp());
+      runApp(const MyApp());
+    },
+    (error, stackTrace) {
+      // Jaring ini akan menangkap SEMUA error yang tidak tertangani
+      print("==============================================");
+      print("          ERROR TERTANGKAP DI LEVEL ATAS      ");
+      print("==============================================");
+      print("PESAN ERROR: $error");
+      print("----------------------------------------------");
+      print("LOKASI FILE (STACK TRACE):");
+      print(stackTrace);
+      print("==============================================");
+    },
+  );
 }
 
 class MyApp extends StatelessWidget {
