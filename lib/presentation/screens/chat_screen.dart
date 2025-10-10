@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lottie/lottie.dart';
+import 'package:shimmer/shimmer.dart';
 
 class ChatScreen extends StatefulWidget {
   final String chatId;
@@ -97,7 +98,7 @@ class _ChatScreenState extends State<ChatScreen> {
       physics: const BouncingScrollPhysics(),
       padding: const EdgeInsets.symmetric(vertical: 20.0, horizontal: 12.0),
       itemCount: messages.length + 1,
-      separatorBuilder: (context, index) => const SizedBox(height: 16.0),
+      separatorBuilder: (context, index) => const SizedBox(height: 12.0),
       itemBuilder: (context, index) {
         if (index == messages.length) {
           final isLoading =
@@ -112,13 +113,27 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageItem(BuildContext context, ChatMessage message) {
     if (message.sender == MessageSender.system) {
-      if (message.text.isNotEmpty) {
+      // Jangan tampilkan pesan sistem "Analisis awal dokumen."
+      // Hanya tampilkan pesan sistem jika itu adalah pesan error.
+      if (message.text.isNotEmpty &&
+          message.text != 'Analisis awal dokumen.' &&
+          message.analysisResult == null) {
         return _buildErrorMessage(context, message.text);
       }
       return const SizedBox.shrink();
     }
 
-    return CustomChatBubble(message: message);
+    return Align(
+      alignment: message.sender == MessageSender.user
+          ? Alignment.centerRight
+          : Alignment.centerLeft,
+      child: Container(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.75,
+        ),
+        child: CustomChatBubble(message: message),
+      ),
+    );
   }
 
   Widget _buildMessageInput(BuildContext context) {
@@ -146,11 +161,40 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Widget _buildLoadingIndicator() {
-    return Center(
-      child: Lottie.asset(
-        'assets/lottie/loader_animation.json',
-        height: 60,
-        width: 80,
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        margin: const EdgeInsets.only(right: 50),
+        child: Shimmer.fromColors(
+          baseColor: const Color(0xFF2D2D2D),
+          highlightColor: const Color(0xFF424242),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D2D2D),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Lottie.asset(
+                  'assets/lottie/loader_animation.json',
+                  height: 30,
+                  width: 40,
+                ),
+                const SizedBox(width: 8),
+                Container(
+                  width: 100,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }

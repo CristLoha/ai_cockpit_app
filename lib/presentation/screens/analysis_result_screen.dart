@@ -21,11 +21,12 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
   @override
   void initState() {
     super.initState();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (widget.result == null) {
-        context.read<ChatBloc>().add(LoadChat(widget.chatId));
-      } else {
+    // Jika widget.result disediakan, itu berarti analisis baru saja selesai.
+    // Dalam kasus ini, kita menambahkan pesan analisis awal ke ChatBloc.
+    // Jika tidak (navigasi dari riwayat), ChatBloc seharusnya sudah
+    // diinstruksikan untuk memuat chat oleh HistoryDrawer.
+    if (widget.result != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
         final initialAnalysisMessage = ChatMessage(
           text: 'Analisis awal dokumen.',
           sender: MessageSender.system,
@@ -33,8 +34,8 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
           timestamp: widget.result!.createdAt,
         );
         context.read<ChatBloc>().add(AddSystemMessage(initialAnalysisMessage));
-      }
-    });
+      });
+    }
   }
 
   @override
@@ -269,8 +270,12 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                 keyword,
                 style: GoogleFonts.inter(color: Colors.white70),
               ),
-              backgroundColor: Colors.deepPurple.withAlpha(51),
-              side: BorderSide(color: Colors.deepPurple.withAlpha(128)),
+              backgroundColor: Colors.deepPurple.withAlpha(
+                51,
+              ), // Already using withAlpha
+              side: BorderSide(
+                color: Colors.deepPurple.withAlpha(128),
+              ), // Already using withAlpha
               padding: const EdgeInsets.symmetric(
                 horizontal: 8.0,
                 vertical: 4.0,

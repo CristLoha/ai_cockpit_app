@@ -23,26 +23,29 @@ class HistoryDrawer extends StatelessWidget {
   Widget build(BuildContext context) {
     return Drawer(
       backgroundColor: const Color(0xFF1E1E1E),
-
-      child: Column(
-        children: [
-          _buildHeader(context),
-          Expanded(
-            child: BlocBuilder<AuthCubit, AuthState>(
-              builder: (context, authState) {
-                if (authState is Authenticated) {
-                  return _buildHistoryList();
-                }
-                return _buildSignInPrompt(context);
+      child: BlocBuilder<AuthCubit, AuthState>(
+        builder: (context, authState) {
+          if (authState is Authenticated) {
+            return BlocBuilder<HistoryCubit, HistoryState>(
+              builder: (context, historyState) {
+                final isHistoryEmpty = historyState.history.isEmpty;
+                return Column(
+                  children: [
+                    _buildHeader(context, isHistoryEmpty: isHistoryEmpty),
+                    Expanded(child: _buildHistoryList(historyState)),
+                  ],
+                );
               },
-            ),
-          ),
-        ],
+            );
+          }
+          // Jika tidak terautentikasi
+          return _buildUnauthenticatedView(context);
+        },
       ),
     );
   }
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, {required bool isHistoryEmpty}) {
     return SizedBox(
       height: 140,
       child: DrawerHeader(
@@ -70,7 +73,8 @@ class HistoryDrawer extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-                if (isAuthenticated) _buildDeleteAllButton(context),
+                if (isAuthenticated)
+                  _buildDeleteAllButton(context, isDisabled: isHistoryEmpty),
               ],
             ),
             const SizedBox(height: 10),
@@ -84,25 +88,43 @@ class HistoryDrawer extends StatelessWidget {
     );
   }
 
-  Widget _buildDeleteAllButton(BuildContext context) {
+  Widget _buildDeleteAllButton(
+    BuildContext context, {
+    required bool isDisabled,
+  }) {
     return IconButton(
-      icon: const Icon(Icons.delete_sweep_outlined, color: Colors.white),
-      tooltip: 'Hapus Semua Riwayat',
-      onPressed: () => _showDeleteConfirmationDialog(
-        context,
-        title: 'Hapus Semua Riwayat?',
-        content:
-            'Tindakan ini tidak dapat diurungkan. Semua riwayat analisis Anda akan dihapus secara permanen.',
-        onConfirm: () {
-          context.read<HistoryCubit>().deleteAllChats();
-          Navigator.of(context).pop();
-        },
+      icon: Icon(
+        Icons.delete_sweep_outlined,
+        color: isDisabled ? Colors.grey.shade700 : Colors.white,
       ),
+      tooltip: 'Hapus Semua Riwayat',
+      onPressed: isDisabled
+          ? null
+          : () => _showDeleteConfirmationDialog(
+              context,
+              title: 'Hapus Semua Riwayat?',
+              content:
+                  'Tindakan ini tidak dapat diurungkan. Semua riwayat analisis Anda akan dihapus secara permanen.',
+              onConfirm: () {
+                context.read<HistoryCubit>().deleteAllChats();
+                Navigator.of(context).pop();
+              },
+            ),
     );
   }
 
-  Widget _buildHistoryList() {
+  Widget _buildUnauthenticatedView(BuildContext context) {
+    return Column(
+      children: [
+        _buildHeader(context, isHistoryEmpty: true),
+        Expanded(child: _buildSignInPrompt(context)),
+      ],
+    );
+  }
+
+  Widget _buildHistoryList(HistoryState historyState) {
     return BlocConsumer<HistoryCubit, HistoryState>(
+      // Gunakan state yang sudah ada dari builder di atas
       listener: (context, state) {
         if (state is HistoryError) {
           ScaffoldMessenger.of(context)
@@ -116,32 +138,29 @@ class HistoryDrawer extends StatelessWidget {
         }
       },
       builder: (context, historyState) {
+        // Builder ini sekarang hanya fokus pada rendering list
         if (historyState is HistoryLoading && historyState.history.isEmpty) {
           return _buildShimmerLoading();
         }
-        if (historyState is HistoryLoaded ||
-            (historyState is HistoryLoading &&
-                historyState.history.isNotEmpty)) {
-          final historyList = historyState.history;
-          if (historyList.isEmpty) {
-            return _buildEmptyState();
-          }
-          return ListView.builder(
-            padding: const EdgeInsets.only(top: 8, bottom: 8),
-            itemCount: historyList.length,
-            itemBuilder: (context, index) {
-              final item = historyList[index];
-              return _buildHistoryItem(context, item);
-            },
-          );
+
+        // Tangani kondisi error saat tidak ada riwayat yang bisa ditampilkan
+        if (historyState is HistoryError && historyState.history.isEmpty) {
+          return _buildErrorState(context, historyState.message);
         }
-        if (historyState is HistoryError) {
-          // Tampilkan empty state jika error terjadi tapi ada data lama
-          if (historyState.history.isEmpty) {
-            return _buildErrorState(context, historyState.message);
-          }
+
+        final historyList = historyState.history;
+        if (historyList.isEmpty) {
+          return _buildEmptyState();
         }
-        return _buildEmptyState(); // Fallback
+
+        return ListView.builder(
+          padding: const EdgeInsets.only(top: 8, bottom: 8),
+          itemCount: historyList.length,
+          itemBuilder: (context, index) {
+            final item = historyList[index];
+            return _buildHistoryItem(context, item);
+          },
+        );
       },
     );
   }
@@ -175,7 +194,7 @@ class HistoryDrawer extends StatelessWidget {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        DateFormat.yMMMd().add_jm().format(item.createdAt),
+                        DateFormat.yMMMd().format(item.createdAt),
                         style: TextStyle(color: Colors.grey[400], fontSize: 12),
                       ),
                     ],

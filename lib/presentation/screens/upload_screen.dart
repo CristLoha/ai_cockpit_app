@@ -53,6 +53,9 @@ class _UploadScreenState extends State<UploadScreen> {
                     listener: (context, state) {
                       if (state.status == AnalysisStatus.success &&
                           state.result != null) {
+                        // Panggil fetchHistory() untuk memperbarui daftar riwayat secara otomatis
+                        context.read<HistoryCubit>().fetchHistory();
+
                         Navigator.of(context)
                             .push(
                               MaterialPageRoute(

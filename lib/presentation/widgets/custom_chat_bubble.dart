@@ -1,7 +1,6 @@
-import 'package:ai_cockpit_app/data/models/chat_message.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:google_fonts/google_fonts.dart';
+import 'package:ai_cockpit_app/data/models/chat_message.dart';
 
 class CustomChatBubble extends StatelessWidget {
   final ChatMessage message;
@@ -11,75 +10,35 @@ class CustomChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isUser = message.sender == MessageSender.user;
-    final isAi = message.sender == MessageSender.ai;
-    final theme = Theme.of(context);
 
-    if (isUser) {
-      return Align(
-        alignment: Alignment.centerRight,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
-          decoration: BoxDecoration(
-            color: const Color(0xFF3D3D3D),
-            borderRadius: BorderRadius.circular(16.0),
-          ),
-          child: SelectableText(
-            message.text,
-            style: const TextStyle(color: Colors.white),
-          ),
+    return Container(
+      margin: EdgeInsets.only(left: isUser ? 50 : 0, right: isUser ? 0 : 50),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      decoration: BoxDecoration(
+        color: isUser
+            ? Colors.deepPurple.withAlpha(230)
+            : const Color(0xFF2D2D2D),
+        borderRadius: BorderRadius.only(
+          topLeft: const Radius.circular(16),
+          topRight: const Radius.circular(16),
+          bottomLeft: Radius.circular(isUser ? 16 : 4),
+          bottomRight: Radius.circular(isUser ? 4 : 16),
         ),
-      );
-    }
-
-    if (isAi) {
-      return Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SelectableRegion(
-                  focusNode: FocusNode(),
-                  selectionControls: MaterialTextSelectionControls(),
-                  child: MarkdownBody(
-                    data: message.text,
-                    styleSheet: MarkdownStyleSheet.fromTheme(theme).copyWith(
-                      p: theme.textTheme.bodyMedium?.copyWith(
-                        color: Colors.white,
-                        height: 1.5,
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                IconButton(
-                  icon: const Icon(
-                    Icons.copy_all_rounded,
-                    size: 20,
-                    color: Colors.white54,
-                  ),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: message.text));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Teks jawaban AI disalin ke clipboard.'),
-                        behavior: SnackBarBehavior.floating,
-                        duration: Duration(seconds: 2),
-                      ),
-                    );
-                  },
-                  padding: EdgeInsets.zero,
-                  constraints: const BoxConstraints(),
-                ),
-              ],
-            ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withAlpha(26),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
           ),
         ],
-      );
-    }
-
-    return const SizedBox.shrink();
+      ),
+      child: Text(
+        message.text,
+        style: GoogleFonts.inter(
+          color: isUser ? Colors.white : Colors.white.withAlpha(222),
+          fontSize: 14,
+        ),
+      ),
+    );
   }
 }
