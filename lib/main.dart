@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:developer' as developer;
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:ai_cockpit_app/api/api_service.dart';
 import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
@@ -71,8 +72,10 @@ class MyApp extends StatelessWidget {
       providers: [
         RepositoryProvider(create: (context) => DeviceRepository()),
         RepositoryProvider(
-          create: (context) =>
-              ApiService(deviceRepository: context.read<DeviceRepository>()),
+          create: (context) => ApiService(
+            deviceRepository: context.read<DeviceRepository>(),
+            connectivity: Connectivity(),
+          ),
         ),
         RepositoryProvider(
           create: (context) =>

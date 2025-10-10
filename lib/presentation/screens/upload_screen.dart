@@ -34,8 +34,6 @@ class _UploadScreenState extends State<UploadScreen> {
           return PopScope(
             canPop: analysisState.status != AnalysisStatus.loading,
             onPopInvokedWithResult: (bool didPop, _) {
-              // Jika pop dicegah (karena canPop false), itu berarti
-              // analisis sedang berjalan. Kirim event untuk membatalkan.
               if (!didPop && analysisState.status == AnalysisStatus.loading) {
                 context.read<AnalysisBloc>().add(AnalysisCancelled());
               }
@@ -74,7 +72,10 @@ class _UploadScreenState extends State<UploadScreen> {
                       } else if (state.status == AnalysisStatus.failure) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('${state.errorMessage}'),
+                            content: Text(
+                              state.errorMessage ??
+                                  'Terjadi kesalahan yang tidak diketahui.',
+                            ),
                             backgroundColor: Colors.redAccent,
                           ),
                         );

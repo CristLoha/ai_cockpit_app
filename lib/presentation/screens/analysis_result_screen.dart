@@ -6,7 +6,6 @@ import 'package:ai_cockpit_app/presentation/widgets/analysis_card.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'dart:developer' as developer;
 
 class AnalysisResultScreen extends StatefulWidget {
   final AnalysisResult? result;
@@ -77,12 +76,14 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                     ),
                   );
               } else if (state.status == ChatStatus.exportFailure) {
-                developer.log('${state.errorMessage}');
+                final errorMessage =
+                    state.errorMessage ??
+                    'Terjadi kesalahan yang tidak diketahui.';
                 ScaffoldMessenger.of(context)
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
                     SnackBar(
-                      content: Text('Gagal mengekspor: "Terjadi kesalahan"}'),
+                      content: Text('Gagal mengekspor: $errorMessage'),
                       backgroundColor: Colors.redAccent,
                     ),
                   );

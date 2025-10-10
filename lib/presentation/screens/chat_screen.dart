@@ -112,7 +112,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildMessageItem(BuildContext context, ChatMessage message) {
     if (message.sender == MessageSender.system) {
-      if (message.text.toLowerCase().startsWith('error:')) {
+      if (message.text.isNotEmpty) {
         return _buildErrorMessage(context, message.text);
       }
       return const SizedBox.shrink();
@@ -171,7 +171,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 12),
           Flexible(
             child: Text(
-              errorText.replaceFirst('Error: ', ''),
+              errorText,
               style: GoogleFonts.inter(color: Colors.redAccent, fontSize: 14),
             ),
           ),

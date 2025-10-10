@@ -67,7 +67,10 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       );
     } catch (e) {
       emit(
-        state.copyWith(status: ChatStatus.failure, errorMessage: e.toString()),
+        state.copyWith(
+          status: ChatStatus.failure,
+          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+        ),
       );
     }
   }
@@ -125,7 +128,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           : e.toString();
 
       final errorMessage = ChatMessage(
-        text: 'Error: $errorMessageText',
+        text: errorMessageText,
         sender: MessageSender.system,
         timestamp: DateTime.now(),
       );

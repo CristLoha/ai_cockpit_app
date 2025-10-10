@@ -1,5 +1,6 @@
 import 'dart:typed_data';
 import 'package:dio/dio.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:developer' as developer;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
@@ -11,14 +12,28 @@ import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 class ApiService {
   final Dio _dio;
   final DeviceRepository deviceRepository;
+  final Connectivity _connectivity;
 
-  ApiService({required this.deviceRepository})
-    : _dio = Dio(
-        BaseOptions(baseUrl: 'https://ai-cockpit-backend.vercel.app/api'),
-      ) {
+  ApiService({
+    required this.deviceRepository,
+    required Connectivity connectivity,
+  }) : _dio = Dio(
+         BaseOptions(baseUrl: 'https://ai-cockpit-backend.vercel.app/api'),
+       ),
+       _connectivity = connectivity {
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
+          final connectivityResult = await _connectivity.checkConnectivity();
+          if (connectivityResult.contains(ConnectivityResult.none)) {
+            return handler.reject(
+              DioException(
+                requestOptions: options,
+                error:
+                    'Tidak ada koneksi internet. Periksa kembali jaringan Anda.',
+              ),
+            );
+          }
           final deviceId = await deviceRepository.getDeviceId();
           options.headers['x-device-id'] = deviceId;
           final user = FirebaseAuth.instance.currentUser;
@@ -79,7 +94,7 @@ class ApiService {
         rethrow;
       }
 
-      String finalErrorMessage = 'Terjadi kesalahan yang tidak diketahui.';
+      String finalErrorMessage;
 
       if (e.response != null) {
         if (e.response!.data is Map<String, dynamic>) {
@@ -87,15 +102,16 @@ class ApiService {
           finalErrorMessage =
               responseData['message'] ?? 'Gagal menganalisis dokumen.';
         } else {
-          finalErrorMessage = e.response!.data.toString();
+          finalErrorMessage = 'Terjadi kesalahan pada server. Coba lagi nanti.';
         }
       } else {
-        // Jika tidak ada respons sama sekali (misal: masalah jaringan)
-        finalErrorMessage = 'Gagal terhubung ke server. Periksa koneksi Anda.';
+        finalErrorMessage = e.error is String
+            ? e.error.toString()
+            : 'Gagal terhubung ke server. Periksa koneksi Anda.';
       }
 
       developer.log(
-        'Error saat menganalisis dokumen: $finalErrorMessage',
+        'Error saat menganalisis dokumen: ${e.error ?? e.message}',
         name: 'ApiService',
       );
       throw Exception(finalErrorMessage);
@@ -113,13 +129,25 @@ class ApiService {
       );
       return AIResponse.fromJson(response.data);
     } on DioException catch (e) {
-      if (e.response?.statusCode == 429) throw GuestLimitExceededException();
+      if (e.response?.statusCode == 429) {
+        throw GuestLimitExceededException();
+      }
+
+      String errorMessage;
+      if (e.response != null) {
+        errorMessage =
+            (e.response!.data as Map<String, dynamic>)['message'] ??
+            'Gagal mengirim pesan.';
+      } else {
+        errorMessage = e.error is String
+            ? e.error.toString()
+            : 'Gagal mengirim pesan. Periksa koneksi Anda.';
+      }
       developer.log(
-        'Error saat mengirim pertanyaan: ${e.response?.data ?? e.message}',
+        'Error saat mengirim pertanyaan: ${e.error ?? e.message}',
         name: 'ApiService',
       );
-
-      throw Exception('Gagal mengirim pesan. Periksa koneksi Anda.');
+      throw Exception(errorMessage);
     }
   }
 
@@ -140,11 +168,14 @@ class ApiService {
         return [];
       }
 
+      final errorMessage = e.error is String
+          ? e.error.toString()
+          : 'Gagal memuat riwayat. Periksa koneksi Anda.';
       developer.log(
-        'Error saat memuat riwayat: ${e.response?.data ?? e.message}',
+        'Error saat memuat riwayat: ${e.error ?? e.message}',
         name: 'ApiService',
       );
-      throw Exception('Gagal memuat riwayat. Periksa koneksi Anda.');
+      throw Exception(errorMessage);
     }
   }
 
@@ -152,9 +183,15 @@ class ApiService {
     try {
       final response = await _dio.get('/chats/$chatId');
       return response.data as Map<String, dynamic>;
-    } catch (e) {
-      developer.log('Error saat memuat detail chat: $e', name: 'ApiService');
-      throw Exception('Gagal memuat detail chat. Silakan coba lagi.');
+    } on DioException catch (e) {
+      final errorMessage = e.error is String
+          ? e.error.toString()
+          : 'Gagal memuat detail chat. Silakan coba lagi.';
+      developer.log(
+        'Error saat memuat detail chat: ${e.error ?? e.message}',
+        name: 'ApiService',
+      );
+      throw Exception(errorMessage);
     }
   }
 
@@ -163,17 +200,14 @@ class ApiService {
       await _dio.delete('/chats/$chatId');
       developer.log('Chat $chatId berhasil dihapus.', name: 'ApiService');
     } on DioException catch (e) {
+      final errorMessage = e.error is String
+          ? e.error.toString()
+          : 'Gagal menghapus riwayat. Coba lagi nanti.';
       developer.log(
-        'Error saat menghapus chat: ${e.response?.data ?? e.message}',
+        'Error saat menghapus chat: ${e.error ?? e.message}',
         name: 'ApiService',
       );
-      throw Exception('Gagal menghapus riwayat. Coba lagi nanti.');
-    } catch (e) {
-      developer.log(
-        'Error tidak diketahui saat menghapus chat: $e',
-        name: 'ApiService',
-      );
-      throw Exception('Terjadi kesalahan yang tidak diketahui.');
+      throw Exception(errorMessage);
     }
   }
 
@@ -182,17 +216,14 @@ class ApiService {
       await _dio.delete('/chats');
       developer.log('Semua chat berhasil dihapus.', name: 'ApiService');
     } on DioException catch (e) {
+      final errorMessage = e.error is String
+          ? e.error.toString()
+          : 'Gagal menghapus semua riwayat. Coba lagi nanti.';
       developer.log(
-        'Error saat menghapus semua chat: ${e.response?.data ?? e.message}',
+        'Error saat menghapus semua chat: ${e.error ?? e.message}',
         name: 'ApiService',
       );
-      throw Exception('Gagal menghapus semua riwayat. Coba lagi nanti.');
-    } catch (e) {
-      developer.log(
-        'Error tidak diketahui saat menghapus semua chat: $e',
-        name: 'ApiService',
-      );
-      throw Exception('Terjadi kesalahan yang tidak diketahui.');
+      throw Exception(errorMessage);
     }
   }
 }
