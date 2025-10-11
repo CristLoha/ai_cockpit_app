@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:developer' as developer;
 
-import 'package:ai_cockpit_app/api/api_service.dart';
+import 'package:ai_cockpit_app/data/api/api_service.dart';
 import 'package:ai_cockpit_app/blocs/analysis/analysis_bloc.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';

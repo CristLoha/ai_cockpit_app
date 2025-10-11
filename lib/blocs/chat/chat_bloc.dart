@@ -235,9 +235,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         return;
       }
 
-      final Directory? dir = await getDownloadsDirectory();
+      final Directory? dir;
+      if (Platform.isIOS) {
+        dir = await getApplicationDocumentsDirectory();
+      } else {
+        dir = await getDownloadsDirectory();
+      }
+
       if (dir == null) {
-        throw Exception("Tidak dapat menemukan direktori downloads.");
+        throw Exception(
+          "Tidak dapat menemukan direktori untuk menyimpan file.",
+        );
       }
 
       final analysisTitle = analysisResult.title;
