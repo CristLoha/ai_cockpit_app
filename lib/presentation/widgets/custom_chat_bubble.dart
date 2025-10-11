@@ -1,6 +1,6 @@
+import 'package:ai_cockpit_app/data/models/chat_message.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:ai_cockpit_app/data/models/chat_message.dart';
 
 class CustomChatBubble extends StatelessWidget {
   final ChatMessage message;

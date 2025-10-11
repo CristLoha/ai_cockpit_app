@@ -1,17 +1,19 @@
+import 'dart:developer' as developer;
+import 'dart:io';
 import 'dart:typed_data';
+
 import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
+import 'package:ai_cockpit_app/core/errors/exceptions.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/models/chat_message.dart';
-import 'package:ai_cockpit_app/services/docx_export_service.dart';
-import 'package:ai_cockpit_app/services/pdf_export_service.dart';
-import 'package:ai_cockpit_app/services/notification_service.dart';
 import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
+import 'package:ai_cockpit_app/services/docx_export_service.dart';
+import 'package:ai_cockpit_app/services/notification_service.dart';
+import 'package:ai_cockpit_app/services/pdf_export_service.dart';
 import 'package:bloc/bloc.dart';
-import 'package:equatable/equatable.dart';
-import 'dart:io';
-import 'dart:developer' as developer;
-import 'package:path_provider/path_provider.dart';
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:equatable/equatable.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 part 'chat_event.dart';
@@ -65,11 +67,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
           currentChatId: event.chatId,
         ),
       );
+    } on ServerException catch (e) {
+      emit(state.copyWith(status: ChatStatus.failure, errorMessage: e.message));
+    } on NetworkException catch (e) {
+      emit(
+        state.copyWith(status: ChatStatus.failure, errorMessage: e.toString()),
+      );
     } catch (e) {
       emit(
         state.copyWith(
           status: ChatStatus.failure,
-          errorMessage: e.toString().replaceFirst('Exception: ', ''),
+          errorMessage: 'Terjadi kesalahan: $e',
         ),
       );
     }
@@ -123,10 +131,16 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
         ),
       );
     } catch (e) {
-      final errorMessageText = (e is Exception)
-          ? e.toString().replaceFirst('Exception: ', '')
-          : e.toString();
-
+      String errorMessageText;
+      if (e is ServerException) {
+        errorMessageText = e.message;
+      } else if (e is NetworkException) {
+        errorMessageText = e.toString();
+      } else if (e is GuestLimitExceededException) {
+        errorMessageText = e.toString();
+      } else {
+        errorMessageText = 'Terjadi kesalahan yang tidak diketahui.';
+      }
       final errorMessage = ChatMessage(
         text: errorMessageText,
         sender: MessageSender.system,
@@ -136,7 +150,6 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       emit(
         state.copyWith(
           status: ChatStatus.failure,
-
           messages: [...currentMessages, errorMessage],
           errorMessage: errorMessageText,
         ),
@@ -246,15 +259,17 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
 
       emit(state.copyWith(status: ChatStatus.exportSuccess));
-    } catch (e) {
-      final errorMessageText = (e is Exception)
-          ? e.toString().replaceFirst('Exception: ', '')
-          : e.toString();
-
+    } on Exception catch (e) {
+      String errorMessage;
+      if (e is ServerException) {
+        errorMessage = e.message;
+      } else {
+        errorMessage = e.toString().replaceFirst('Exception: ', '');
+      }
       emit(
         state.copyWith(
           status: ChatStatus.exportFailure,
-          errorMessage: errorMessageText,
+          errorMessage: errorMessage,
         ),
       );
     }

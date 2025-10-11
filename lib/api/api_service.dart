@@ -1,13 +1,14 @@
-import 'dart:typed_data';
-import 'package:dio/dio.dart';
-import 'package:connectivity_plus/connectivity_plus.dart';
 import 'dart:developer' as developer;
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
-import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
+import 'dart:typed_data';
+
 import 'package:ai_cockpit_app/core/errors/exceptions.dart';
 import 'package:ai_cockpit_app/data/models/ai_response.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
+import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
+import 'package:ai_cockpit_app/data/repositories/device_repository.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
+import 'package:dio/dio.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ApiService {
   final Dio _dio;
@@ -26,12 +27,9 @@ class ApiService {
         onRequest: (options, handler) async {
           final connectivityResult = await _connectivity.checkConnectivity();
           if (connectivityResult.contains(ConnectivityResult.none)) {
+            // Melempar NetworkException jika tidak ada koneksi internet.
             return handler.reject(
-              DioException(
-                requestOptions: options,
-                error:
-                    'Tidak ada koneksi internet. Periksa kembali jaringan Anda.',
-              ),
+              DioException(requestOptions: options, error: NetworkException()),
             );
           }
           final deviceId = await deviceRepository.getDeviceId();
@@ -94,27 +92,24 @@ class ApiService {
         rethrow;
       }
 
-      String finalErrorMessage;
-
       if (e.response != null) {
+        // Error dari respons server
         if (e.response!.data is Map<String, dynamic>) {
           final responseData = e.response!.data as Map<String, dynamic>;
-          finalErrorMessage =
+          final errorMessage =
               responseData['message'] ?? 'Gagal menganalisis dokumen.';
-        } else {
-          finalErrorMessage = 'Terjadi kesalahan pada server. Coba lagi nanti.';
+          throw ServerException(errorMessage);
         }
-      } else {
-        finalErrorMessage = e.error is String
-            ? e.error.toString()
-            : 'Gagal terhubung ke server. Periksa koneksi Anda.';
+        throw ServerException(
+          'Terjadi kesalahan pada server. Coba lagi nanti.',
+        );
       }
 
-      developer.log(
-        'Error saat menganalisis dokumen: ${e.error ?? e.message}',
-        name: 'ApiService',
-      );
-      throw Exception(finalErrorMessage);
+      // Error jaringan atau lainnya
+      if (e.error is NetworkException) {
+        throw e.error as NetworkException;
+      }
+      throw ServerException('Gagal terhubung ke server. Periksa koneksi Anda.');
     }
   }
 
@@ -133,21 +128,20 @@ class ApiService {
         throw GuestLimitExceededException();
       }
 
-      String errorMessage;
       if (e.response != null) {
-        errorMessage =
+        final errorMessage =
             (e.response!.data as Map<String, dynamic>)['message'] ??
             'Gagal mengirim pesan.';
-      } else {
-        errorMessage = e.error is String
-            ? e.error.toString()
-            : 'Gagal mengirim pesan. Periksa koneksi Anda.';
+        throw ServerException(errorMessage);
       }
-      developer.log(
-        'Error saat mengirim pertanyaan: ${e.error ?? e.message}',
-        name: 'ApiService',
-      );
-      throw Exception(errorMessage);
+
+      if (e.error is NetworkException) {
+        throw e.error as NetworkException;
+      }
+      throw ServerException('Gagal mengirim pesan. Periksa koneksi Anda.');
+    } catch (e) {
+      developer.log('Error saat mengirim pertanyaan: $e', name: 'ApiService');
+      throw ServerException('Terjadi kesalahan yang tidak diketahui.');
     }
   }
 
@@ -168,14 +162,17 @@ class ApiService {
         return [];
       }
 
-      final errorMessage = e.error is String
-          ? e.error.toString()
-          : 'Gagal memuat riwayat. Periksa koneksi Anda.';
-      developer.log(
-        'Error saat memuat riwayat: ${e.error ?? e.message}',
-        name: 'ApiService',
-      );
-      throw Exception(errorMessage);
+      if (e.response != null) {
+        final errorMessage =
+            (e.response!.data as Map<String, dynamic>)['message'] ??
+            'Gagal memuat riwayat.';
+        throw ServerException(errorMessage);
+      }
+
+      if (e.error is NetworkException) {
+        throw e.error as NetworkException;
+      }
+      throw ServerException('Gagal memuat riwayat. Periksa koneksi Anda.');
     }
   }
 
@@ -184,14 +181,17 @@ class ApiService {
       final response = await _dio.get('/chats/$chatId');
       return response.data as Map<String, dynamic>;
     } on DioException catch (e) {
-      final errorMessage = e.error is String
-          ? e.error.toString()
-          : 'Gagal memuat detail chat. Silakan coba lagi.';
-      developer.log(
-        'Error saat memuat detail chat: ${e.error ?? e.message}',
-        name: 'ApiService',
-      );
-      throw Exception(errorMessage);
+      if (e.response != null) {
+        final errorMessage =
+            (e.response!.data as Map<String, dynamic>)['message'] ??
+            'Gagal memuat detail chat.';
+        throw ServerException(errorMessage);
+      }
+
+      if (e.error is NetworkException) {
+        throw e.error as NetworkException;
+      }
+      throw ServerException('Gagal memuat detail chat. Silakan coba lagi.');
     }
   }
 
@@ -200,14 +200,17 @@ class ApiService {
       await _dio.delete('/chats/$chatId');
       developer.log('Chat $chatId berhasil dihapus.', name: 'ApiService');
     } on DioException catch (e) {
-      final errorMessage = e.error is String
-          ? e.error.toString()
-          : 'Gagal menghapus riwayat. Coba lagi nanti.';
-      developer.log(
-        'Error saat menghapus chat: ${e.error ?? e.message}',
-        name: 'ApiService',
-      );
-      throw Exception(errorMessage);
+      if (e.response != null) {
+        final errorMessage =
+            (e.response!.data as Map<String, dynamic>)['message'] ??
+            'Gagal menghapus riwayat.';
+        throw ServerException(errorMessage);
+      }
+
+      if (e.error is NetworkException) {
+        throw e.error as NetworkException;
+      }
+      throw ServerException('Gagal menghapus riwayat. Coba lagi nanti.');
     }
   }
 
@@ -216,14 +219,17 @@ class ApiService {
       await _dio.delete('/chats');
       developer.log('Semua chat berhasil dihapus.', name: 'ApiService');
     } on DioException catch (e) {
-      final errorMessage = e.error is String
-          ? e.error.toString()
-          : 'Gagal menghapus semua riwayat. Coba lagi nanti.';
-      developer.log(
-        'Error saat menghapus semua chat: ${e.error ?? e.message}',
-        name: 'ApiService',
-      );
-      throw Exception(errorMessage);
+      if (e.response != null) {
+        final errorMessage =
+            (e.response!.data as Map<String, dynamic>)['message'] ??
+            'Gagal menghapus semua riwayat.';
+        throw ServerException(errorMessage);
+      }
+
+      if (e.error is NetworkException) {
+        throw e.error as NetworkException;
+      }
+      throw ServerException('Gagal menghapus semua riwayat. Coba lagi nanti.');
     }
   }
 }

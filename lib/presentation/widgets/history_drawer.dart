@@ -1,11 +1,11 @@
 import 'package:ai_cockpit_app/blocs/auth/auth_cubit.dart';
 import 'package:ai_cockpit_app/blocs/chat/chat_bloc.dart';
 import 'package:ai_cockpit_app/blocs/history/history_cubit.dart';
+import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
 import 'package:ai_cockpit_app/presentation/screens/analysis_result_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 

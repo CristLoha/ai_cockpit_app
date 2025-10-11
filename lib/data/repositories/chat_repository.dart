@@ -1,9 +1,10 @@
 import 'dart:typed_data';
+
 import 'package:ai_cockpit_app/api/api_service.dart';
-import 'package:dio/dio.dart';
 import 'package:ai_cockpit_app/data/models/ai_response.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/models/chat_history_item.dart';
+import 'package:dio/dio.dart';
 
 class ChatRepository {
   final ApiService _apiService;

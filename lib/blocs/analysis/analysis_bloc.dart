@@ -1,8 +1,9 @@
 import 'dart:async';
-import 'dart:io';
 import 'dart:developer' as developer;
-import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
+import 'dart:io';
 import 'package:ai_cockpit_app/blocs/auth/auth_cubit.dart';
+import 'package:ai_cockpit_app/blocs/file_picker/file_picker_cubit.dart';
+import 'package:ai_cockpit_app/core/errors/exceptions.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:ai_cockpit_app/data/repositories/chat_repository.dart';
 import 'package:bloc/bloc.dart';
@@ -10,7 +11,6 @@ import 'package:dio/dio.dart';
 import 'package:equatable/equatable.dart';
 
 part 'analysis_event.dart';
-
 part 'analysis_state.dart';
 
 class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
@@ -113,22 +113,24 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
           uploadProgress: 1.0,
         ),
       );
-    } on DioException catch (e, stackTrace) {
+    } on DioException catch (e) {
       if (CancelToken.isCancel(e)) {
         developer.log('Analysis cancelled');
         emit(state.copyWith(status: AnalysisStatus.initial));
         return;
       }
-
-      developer.log("PESAN ERROR: $e");
-      developer.log("LOKASI FILE (STACK TRACE):");
-      developer.log('$stackTrace');
+  
+      final errorMessage = e.error.toString();
       emit(
         state.copyWith(
           status: AnalysisStatus.failure,
-          errorMessage: e.toString(),
+          errorMessage: errorMessage,
         ),
       );
+    } on ServerException catch (e) {
+      emit(state.copyWith(status: AnalysisStatus.failure, errorMessage: e.message));
+    } on NetworkException catch (e) {
+      emit(state.copyWith(status: AnalysisStatus.failure, errorMessage: e.toString()));
     } catch (e, stackTrace) {
       developer.log("PESAN ERROR: $e");
       developer.log("LOKASI FILE (STACK TRACE):");

@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:intl/intl.dart';
 import 'package:pdf/pdf.dart';

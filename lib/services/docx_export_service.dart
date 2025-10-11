@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
 import 'package:docx_template/docx_template.dart';
 import 'package:flutter/services.dart' show rootBundle;
