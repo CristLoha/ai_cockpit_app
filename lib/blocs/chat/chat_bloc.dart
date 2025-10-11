@@ -267,18 +267,18 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       }
 
       emit(state.copyWith(status: ChatStatus.exportSuccess));
-    } on Exception catch (e) {
-      String errorMessage;
-      if (e is ServerException) {
-        errorMessage = e.message;
-      } else {
-        errorMessage = e.toString().replaceFirst('Exception: ', '');
-      }
+    } on ServerException catch (e) {
       emit(
         state.copyWith(
           status: ChatStatus.exportFailure,
-          errorMessage: errorMessage,
+          errorMessage: e.message,
         ),
+      );
+    } catch (e) {
+      emit(
+        state.copyWith(
+            status: ChatStatus.exportFailure,
+            errorMessage: e.toString().replaceFirst('Exception: ', '')),
       );
     }
   }

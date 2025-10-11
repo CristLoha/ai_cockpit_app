@@ -59,10 +59,13 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions ios = FirebaseOptions(
     apiKey: 'AIzaSyBk1gfkSxigUTyiJzFmnnFznRWoa2yG9cE',
-    appId: '1:740529960631:ios:8f19797c309c086d873f32',
+    appId: '1:740529960631:ios:1a5558d28b42fe9f873f32',
     messagingSenderId: '740529960631',
     projectId: 'ai-cockpit-app',
     storageBucket: 'ai-cockpit-app.firebasestorage.app',
-    iosBundleId: 'com.example.aiCockpitApp',
+    androidClientId: '740529960631-k3250etdpru73vgm4if78dluhg3q23iq.apps.googleusercontent.com',
+    iosClientId: '740529960631-o6thcchktdehc0qpcdp8ppfbboujckpf.apps.googleusercontent.com',
+    iosBundleId: 'com.bacoding.aicockpitapp',
   );
+
 }

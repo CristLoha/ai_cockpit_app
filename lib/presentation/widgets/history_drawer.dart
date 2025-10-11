@@ -46,44 +46,42 @@ class HistoryDrawer extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context, {required bool isHistoryEmpty}) {
-    return SizedBox(
-      height: 140,
-      child: DrawerHeader(
-        margin: EdgeInsets.zero,
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Theme.of(context).primaryColor, Colors.deepPurple],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+    return DrawerHeader(
+      margin: EdgeInsets.zero,
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Theme.of(context).primaryColor, Colors.deepPurple],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Riwayat Analisis',
-                  style: GoogleFonts.spaceGrotesk(
-                    fontSize: 22,
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Text(
+                'Riwayat Analisis',
+                style: GoogleFonts.spaceGrotesk(
+                  fontSize: 22,
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
                 ),
-                if (isAuthenticated)
-                  _buildDeleteAllButton(context, isDisabled: isHistoryEmpty),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              'Sesi analisis Anda sebelumnya.',
-              style: GoogleFonts.inter(color: Colors.white70),
-            ),
-          ],
-        ),
+              ),
+              if (isAuthenticated)
+                _buildDeleteAllButton(context, isDisabled: isHistoryEmpty),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Sesi analisis Anda sebelumnya.',
+            style: GoogleFonts.inter(color: Colors.white70),
+          ),
+        ],
       ),
     );
   }

@@ -2,16 +2,20 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>CLIENT_ID</key>
+	<string>740529960631-o6thcchktdehc0qpcdp8ppfbboujckpf.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.740529960631-o6thcchktdehc0qpcdp8ppfbboujckpf</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>740529960631-k3250etdpru73vgm4if78dluhg3q23iq.apps.googleusercontent.com</string>
 	<key>API_KEY</key>
 	<string>AIzaSyBk1gfkSxigUTyiJzFmnnFznRWoa2yG9cE</string>
-	<key>CLIENT_ID</key>
-	<string>740529960631-8f19797c309c086d873f32.apps.googleusercontent.com</string>
 	<key>GCM_SENDER_ID</key>
 	<string>740529960631</string>
 	<key>PLIST_VERSION</key>
 	<string>1</string>
 	<key>BUNDLE_ID</key>
-	<string>com.example.aiCockpitApp</string>
+	<string>com.bacoding.aicockpitapp</string>
 	<key>PROJECT_ID</key>
 	<string>ai-cockpit-app</string>
 	<key>STORAGE_BUCKET</key>
@@ -27,6 +31,6 @@
 	<key>IS_SIGNIN_ENABLED</key>
 	<true></true>
 	<key>GOOGLE_APP_ID</key>
-	<string>1:740529960631:ios:8f19797c309c086d873f32</string>
+	<string>1:740529960631:ios:1a5558d28b42fe9f873f32</string>
 </dict>
 </plist>
