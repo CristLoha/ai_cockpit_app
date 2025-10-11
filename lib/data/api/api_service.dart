@@ -90,7 +90,6 @@ class ApiService {
       }
 
       if (e.response != null) {
-
         if (e.response!.data is Map<String, dynamic>) {
           final responseData = e.response!.data as Map<String, dynamic>;
           final errorMessage =
