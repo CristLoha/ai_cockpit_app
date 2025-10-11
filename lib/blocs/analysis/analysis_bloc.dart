@@ -127,6 +127,8 @@ class AnalysisBloc extends Bloc<AnalysisEvent, AnalysisState> {
           errorMessage: errorMessage,
         ),
       );
+    } on AnalysisException catch (e) {
+      emit(state.copyWith(status: AnalysisStatus.failure, errorMessage: e.message));
     } on ServerException catch (e) {
       emit(state.copyWith(status: AnalysisStatus.failure, errorMessage: e.message));
     } on NetworkException catch (e) {

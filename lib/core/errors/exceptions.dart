@@ -18,3 +18,13 @@ class NetworkException implements Exception {
   String toString() =>
       'Tidak ada koneksi internet. Periksa kembali jaringan Anda.';
 }
+
+
+class AnalysisException implements Exception {
+  final String message;
+
+  AnalysisException(this.message);
+
+  @override
+  String toString() => message;
+}

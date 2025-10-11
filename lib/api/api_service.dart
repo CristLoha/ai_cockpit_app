@@ -1,6 +1,5 @@
 import 'dart:developer' as developer;
 import 'dart:typed_data';
-
 import 'package:ai_cockpit_app/core/errors/exceptions.dart';
 import 'package:ai_cockpit_app/data/models/ai_response.dart';
 import 'package:ai_cockpit_app/data/models/analysis_result.dart';
@@ -27,7 +26,6 @@ class ApiService {
         onRequest: (options, handler) async {
           final connectivityResult = await _connectivity.checkConnectivity();
           if (connectivityResult.contains(ConnectivityResult.none)) {
-            // Melempar NetworkException jika tidak ada koneksi internet.
             return handler.reject(
               DioException(requestOptions: options, error: NetworkException()),
             );
@@ -87,18 +85,17 @@ class ApiService {
       );
       return AnalysisResult.fromJson(response.data);
     } on DioException catch (e) {
-      // Jika error adalah karena pembatalan, lempar kembali agar BLoC bisa menanganinya.
       if (CancelToken.isCancel(e)) {
         rethrow;
       }
 
       if (e.response != null) {
-        // Error dari respons server
+
         if (e.response!.data is Map<String, dynamic>) {
           final responseData = e.response!.data as Map<String, dynamic>;
           final errorMessage =
               responseData['message'] ?? 'Gagal menganalisis dokumen.';
-          throw ServerException(errorMessage);
+          throw AnalysisException(errorMessage);
         }
         throw ServerException(
           'Terjadi kesalahan pada server. Coba lagi nanti.',
