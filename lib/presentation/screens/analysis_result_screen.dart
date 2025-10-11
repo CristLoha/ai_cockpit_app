@@ -69,7 +69,7 @@ class _AnalysisResultScreenState extends State<AnalysisResultScreen> {
                   ..hideCurrentSnackBar()
                   ..showSnackBar(
                     const SnackBar(
-                      content: Text('File berhasil diekspor dan disimpan.'),
+                      content: Text('File berhasil diekspor'),
                       backgroundColor: Colors.green,
                     ),
                   );

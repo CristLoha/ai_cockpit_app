@@ -5,7 +5,7 @@ import 'package:open_filex/open_filex.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 class NotificationService {
-  final FlutterLocalNotificationsPlugin _notificationsPlugin =
+  final FlutterLocalNotificationsPlugin _flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
   Future<void> init() async {
@@ -29,7 +29,7 @@ class NotificationService {
           iOS: initializationSettingsIOS,
         );
 
-    await _notificationsPlugin.initialize(
+    await _flutterLocalNotificationsPlugin.initialize(
       initializationSettings,
 
       onDidReceiveNotificationResponse: (details) async {
@@ -45,7 +45,8 @@ class NotificationService {
 
   Future<void> _handleNotificationLaunch() async {
     final NotificationAppLaunchDetails? launchDetails =
-        await _notificationsPlugin.getNotificationAppLaunchDetails();
+        await _flutterLocalNotificationsPlugin
+            .getNotificationAppLaunchDetails();
     if (launchDetails?.didNotificationLaunchApp ?? false) {
       final String? payload = launchDetails!.notificationResponse?.payload;
       if (payload != null && payload.isNotEmpty) {
@@ -54,15 +55,15 @@ class NotificationService {
     }
   }
 
-  Future<void> showDownloadCompleteNotification({
+  Future<void> showExportCompleteNotification({
     required String fileName,
     required String filePath,
   }) async {
     const AndroidNotificationDetails androidPlatformChannelSpecifics =
         AndroidNotificationDetails(
-          'download_channel',
-          'Downloads',
-          channelDescription: 'Notifikasi untuk download yang telah selesai.',
+          'export_channel', // ID channel
+          'Notifikasi Ekspor', // Nama channel
+          channelDescription: 'Notifikasi ketika ekspor file berhasil.',
           importance: Importance.max,
           priority: Priority.high,
           showWhen: false,
@@ -71,10 +72,10 @@ class NotificationService {
       android: androidPlatformChannelSpecifics,
     );
 
-    await _notificationsPlugin.show(
+    await _flutterLocalNotificationsPlugin.show(
       0,
-      'Download Selesai',
-      'File "$fileName" telah disimpan.',
+      'Ekspor Berhasil', // Judul notifikasi
+      'File "$fileName" berhasil diekspor. Ketuk untuk membuka.', // Isi notifikasi
       platformChannelSpecifics,
       payload: filePath,
     );

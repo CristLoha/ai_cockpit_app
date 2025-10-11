@@ -250,7 +250,7 @@ class ChatBloc extends Bloc<ChatEvent, ChatState> {
       await file.writeAsBytes(fileBytes);
 
       try {
-        await _notificationService.showDownloadCompleteNotification(
+        await _notificationService.showExportCompleteNotification(
           fileName: fileName,
           filePath: filePath,
         );
